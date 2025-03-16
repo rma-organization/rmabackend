@@ -1,6 +1,7 @@
-package com.mit.rma_web_application.model;
+package com.mit.rma_web_application.models;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -8,18 +9,15 @@ import lombok.Setter;
 @Entity
 @Getter
 @Setter
+@AllArgsConstructor
 @NoArgsConstructor
-public class Role {
+@Table(name = "customers")
+public class Customer {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Enumerated(EnumType.STRING)
-    @Column(unique = true, nullable = false)
-    private RoleName name;
-
-    public Role(RoleName name) {
-        this.name = name;
-    }
+    @Column(nullable = false)
+    private String name;
 }

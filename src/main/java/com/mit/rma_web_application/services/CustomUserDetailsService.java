@@ -1,6 +1,6 @@
 package com.mit.rma_web_application.services;
 
-import com.mit.rma_web_application.model.User;
+import com.mit.rma_web_application.models.User;
 import com.mit.rma_web_application.repositories.UserRepository;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -33,7 +33,7 @@ public class CustomUserDetailsService implements UserDetailsService {
 
         // Convert Set<Role> to Collection<GrantedAuthority> (for roles)
         Set<GrantedAuthority> authorities = user.getRoles().stream()
-                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName())) // Add ROLE_ prefix to role names
+                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.toString())) // Add ROLE_ prefix to role names
                 .collect(Collectors.toSet());
 
         // Return Spring Security's UserDetails with username, password, and authorities

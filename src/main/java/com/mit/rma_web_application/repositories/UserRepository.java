@@ -1,6 +1,7 @@
 package com.mit.rma_web_application.repositories;
-import com.mit.rma_web_application.model.User;
-import com.mit.rma_web_application.model.ApprovalStatus;
+
+import com.mit.rma_web_application.models.User;
+import com.mit.rma_web_application.models.ApprovalStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

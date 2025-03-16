@@ -120,15 +120,16 @@
 //}
 package com.mit.rma_web_application.controllers;
 
+import com.mit.rma_web_application.config.JwtUtil;
+import com.mit.rma_web_application.dtos.ApprovelStatusDTO;
 import com.mit.rma_web_application.dtos.AuthRequest;
 import com.mit.rma_web_application.dtos.AuthResponse;
-import com.mit.rma_web_application.dtos.RegisterRequest;
-import com.mit.rma_web_application.model.User;
-import com.mit.rma_web_application.model.ApprovalStatus;
+import com.mit.rma_web_application.dtos.RegisterRequestDTO;
+import com.mit.rma_web_application.models.ApprovalStatus;
+import com.mit.rma_web_application.models.User;
 import com.mit.rma_web_application.repositories.UserRepository;
-import com.mit.rma_web_application.config.JwtUtil;
 import com.mit.rma_web_application.services.CustomUserDetailsService;
-import com.mit.rma_web_application.services.UserService;
+import com.mit.rma_web_application.services.interfaces.IUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -152,7 +153,7 @@ public class AuthController {
     private UserRepository userRepository;
 
     @Autowired
-    private UserService userService;
+    private IUserService userService;
 
     @Autowired
     private CustomUserDetailsService userDetailsService;
@@ -161,7 +162,7 @@ public class AuthController {
      * Endpoint for user registration.
      */
     @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@RequestBody RegisterRequest registerRequest) {
+    public ResponseEntity<?> registerUser(@RequestBody RegisterRequestDTO registerRequest) {
         // Check if the username is already taken
         if (userRepository.existsByUsername(registerRequest.getUsername())) {
             return ResponseEntity.badRequest().body("Username is already taken.");
@@ -195,7 +196,7 @@ public class AuthController {
         User user = userOptional.get();
 
         // Check if the user is approved by the admin
-        if (!user.isApproved()) {
+        if (!user.getApprovalStatus().equals(ApprovalStatus.APPROVED)) {
             return ResponseEntity.status(403).body("User is not approved by admin.");
         }
 
@@ -221,9 +222,9 @@ public class AuthController {
      * Only an admin should be allowed to approve a user.
      */
     @PostMapping("/approve")
-    public ResponseEntity<?> approveUser(@RequestParam String username) {
+    public ResponseEntity<?> approveUser(@RequestBody ApprovelStatusDTO approvelStatusDTO) {
         // Fetch the user by username
-        Optional<User> userOptional = userRepository.findByUsername(username);
+        Optional<User> userOptional = userRepository.findByUsername(approvelStatusDTO.getUsername());
 
         if (userOptional.isEmpty()) {
             return ResponseEntity.badRequest().body("User not found");
@@ -231,18 +232,20 @@ public class AuthController {
 
         User user = userOptional.get();
 
-        // Check if the user is already approved
-        if (user.isApproved()) {
-            return ResponseEntity.status(400).body("User is already approved.");
+        if (approvelStatusDTO.getApprovalStatus().equals(ApprovalStatus.APPROVED)) {
+            // Check if the user is already approved
+            if (user.getApprovalStatus().equals(ApprovalStatus.APPROVED)) {
+                return ResponseEntity.status(400).body("User is already approved.");
+            }
         }
 
         // Update the approval status of the user
-        user.setApprovalStatus(ApprovalStatus.APPROVED);  // Use the setApprovalStatus method
+        user.setApprovalStatus(approvelStatusDTO.getApprovalStatus());  // Use the setApprovalStatus method
 
         // Save the updated user back to the database
         userRepository.save(user);
 
-        return ResponseEntity.ok("User approved successfully.");
+        return ResponseEntity.ok("User approval status updated successfully.");
     }
 
     /**

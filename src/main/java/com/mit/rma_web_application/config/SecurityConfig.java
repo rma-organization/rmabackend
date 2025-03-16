@@ -1,12 +1,11 @@
-
-
-
 package com.mit.rma_web_application.config;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -24,18 +23,14 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-                .csrf(csrf -> csrf.disable()) // Disable CSRF for stateless APIs
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/login", "/api/auth/register").permitAll()  // Allow login & signup
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")  // Only admins
+        http.csrf(AbstractHttpConfigurer::disable) // Disable CSRF for stateless APIs
+                .authorizeHttpRequests(auth -> auth.requestMatchers("/api/auth/login", "/api/auth/register").permitAll() // Allow login & signup
+                        .requestMatchers("/api/admin/**", "/api/auth/approve").hasRole("ADMIN")  // Only admins
                         .requestMatchers("/api/engineer/**").hasRole("ENGINEER")  // Only engineers
                         .requestMatchers("/api/supplychain/**").hasRole("SUPPLYCHAIN")  // Only supply chain
                         .requestMatchers("/api/rma/**").hasRole("RMA")  // Only RMA users
                         .anyRequest().authenticated()  // Secure all other endpoints
-                )
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                ).sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)).addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

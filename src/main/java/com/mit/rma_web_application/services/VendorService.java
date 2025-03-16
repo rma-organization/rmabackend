@@ -1,8 +1,8 @@
-package com.mit.rma_web_application.service;
+package com.mit.rma_web_application.services;
 
 import java.util.List;
 
-import com.mit.rma_web_application.dto.VendorDTO;
+import com.mit.rma_web_application.dtos.VendorDTO;
 
 public interface VendorService {
     List<VendorDTO> getAllVendors();

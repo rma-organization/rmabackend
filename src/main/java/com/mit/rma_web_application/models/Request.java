@@ -1,4 +1,4 @@
-package com.mit.rma_web_application.model;
+package com.mit.rma_web_application.models;
 
 import jakarta.persistence.*;
 import lombok.Getter;
