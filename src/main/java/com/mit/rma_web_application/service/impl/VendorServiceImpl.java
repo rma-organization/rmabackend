@@ -5,30 +5,32 @@ import com.mit.rma_web_application.exception.ResourceNotFoundException;
 import com.mit.rma_web_application.model.Vendor;
 import com.mit.rma_web_application.repository.VendorRepository;
 import com.mit.rma_web_application.service.VendorService;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.time.LocalDateTime;
-
 
 @Service
 public class VendorServiceImpl implements VendorService {
 
     private static final Logger logger = LoggerFactory.getLogger(VendorServiceImpl.class);
 
-    @Autowired
     private VendorRepository vendorRepository;
+
 
     @Override
     public List<VendorDTO> getAllVendors() {
         return vendorRepository.findByDeletedAtIsNull().stream()
-                .map(VendorDTO::new)
+                .map(
+                        vendor -> new VendorDTO(
+                                vendor.getId(),
+                                vendor.getName()
+                        )
+                )
                 .collect(Collectors.toList());
     }
 
@@ -38,7 +40,10 @@ public class VendorServiceImpl implements VendorService {
         vendor.setName(vendorDTO.getName());  // Set the vendor's name
 
         Vendor savedVendor = vendorRepository.save(vendor);
-        return new VendorDTO(savedVendor);
+        return new VendorDTO(
+                savedVendor.getId(),
+                savedVendor.getName()
+        );  // Return saved VendorDTO
     }
 
     @Override
@@ -77,10 +82,9 @@ public class VendorServiceImpl implements VendorService {
         // Log after updating
         logger.info("After Update: Vendor ID = {}, Vendor Name = {}", updatedVendor.getId(), updatedVendor.getName());
 
-        return new VendorDTO(updatedVendor);  // Return updated VendorDTO
+        return new VendorDTO(
+                updatedVendor.getId(),
+                updatedVendor.getName()
+        );  // Return updated VendorDTO
     }
 }
-
-
-
-

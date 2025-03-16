@@ -3,6 +3,8 @@ package com.mit.rma_web_application.model;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -19,17 +21,13 @@ public class Vendor {
     @Column(nullable = false)
     private String name;
 
+    @CreationTimestamp
     private LocalDateTime createdAt;
 
     private LocalDateTime deletedAt;
 
     @OneToMany(mappedBy = "vendor")
     private List<Inventory> parts;
-
-    @PrePersist
-    public void prePersist() {
-        this.createdAt = LocalDateTime.now();
-    }
 
     // Optionally: Method for soft deletion of the vendor (if needed)
     public void softDelete() {
