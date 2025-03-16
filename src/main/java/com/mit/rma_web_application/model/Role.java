@@ -1,15 +1,14 @@
 package com.mit.rma_web_application.model;
 
 import jakarta.persistence.*;
-import lombok.*;
-
-import java.util.Set;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Getter
 @Setter
 @NoArgsConstructor
-@AllArgsConstructor
 public class Role {
 
     @Id
@@ -17,19 +16,10 @@ public class Role {
     private Long id;
 
     @Enumerated(EnumType.STRING)
+    @Column(unique = true, nullable = false)
     private RoleName name;
-
-    @ManyToMany(mappedBy = "roles")
-    private Set<User> users;
 
     public Role(RoleName name) {
         this.name = name;
-    }
-
-    public enum RoleName {
-        ADMIN,
-        ENGINEER,
-        RMA,
-        SUPPLYCHAIN
     }
 }
