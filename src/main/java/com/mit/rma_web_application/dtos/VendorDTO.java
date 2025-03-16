@@ -1,4 +1,4 @@
-package com.mit.rma_web_application.dto;
+package com.mit.rma_web_application.dtos;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
