@@ -13,7 +13,7 @@ import java.util.function.Function;
 @Component
 public class JwtUtil {
 
-    private static final String SECRET_KEY = "YourSuperSecretKeyForJWTEncryption";  // Change this to a strong key
+    private static final String SECRET_KEY = "YnruiT2QocJh06Lt91RRC9ymBAZbB9aDA7NJELPNn8A=";  // Change this to a strong key
 
     private Key getSigningKey() {
         return Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
