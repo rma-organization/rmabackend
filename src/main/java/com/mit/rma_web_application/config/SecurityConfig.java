@@ -11,6 +11,11 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.cors.CorsConfigurationSource;
+
+import java.util.Arrays;
 
 @Configuration
 public class SecurityConfig {
@@ -24,15 +29,31 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable) // Disable CSRF for stateless APIs
-                .authorizeHttpRequests(auth -> auth.requestMatchers("/api/auth/login", "/api/auth/register").permitAll() // Allow login & signup
-                        .requestMatchers("/api/admin/**", "/api/auth/approve").hasRole("ADMIN")  // Only admins
-                        .requestMatchers("/api/engineer/**").hasRole("ENGINEER")  // Only engineers
-                        .requestMatchers("/api/supplychain/**").hasRole("SUPPLYCHAIN")  // Only supply chain
-                        .requestMatchers("/api/rma/**").hasRole("RMA")  // Only RMA users
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/auth/login", "/api/auth/register").permitAll() // Allow login & signup
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")  // Only admins can access these
+                        .requestMatchers("/api/engineer/**").hasRole("ENGINEER")  // Only engineers can access these
+                        .requestMatchers("/api/supplychain/**").hasRole("SUPPLYCHAIN")  // Only supply chain can access these
+                        .requestMatchers("/api/rma/**").hasRole("RMA")  // Only RMA users can access these
                         .anyRequest().authenticated()  // Secure all other endpoints
-                ).sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)).addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                )
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Stateless session
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class); // Add JWT filter
 
         return http.build();
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5174")); // Allow your frontend (replace if needed)
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS")); // Allow specific HTTP methods
+        configuration.setAllowedHeaders(Arrays.asList("*")); // Allow all headers
+        configuration.setAllowCredentials(true); // Allow credentials (cookies, authorization headers, etc.)
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration); // Apply the CORS configuration to all endpoints
+        return source;
     }
 
     @Bean
@@ -42,7 +63,6 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+        return new BCryptPasswordEncoder(); // Use BCrypt password encoding
     }
 }
-
