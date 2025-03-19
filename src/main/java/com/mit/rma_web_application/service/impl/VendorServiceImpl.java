@@ -1,6 +1,6 @@
 package com.mit.rma_web_application.service.impl;
 
-import com.mit.rma_web_application.dto.VendorDTO;
+import com.mit.rma_web_application.dtos.VendorDTO;
 import com.mit.rma_web_application.exception.ResourceNotFoundException;
 import com.mit.rma_web_application.model.Vendor;
 import com.mit.rma_web_application.repository.VendorRepository;
