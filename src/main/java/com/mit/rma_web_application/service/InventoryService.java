@@ -2,7 +2,7 @@ package com.mit.rma_web_application.service;
 
 import java.util.List;
 
-import com.mit.rma_web_application.dtos.InventoryDto;
+import com.mit.rma_web_application.dto.InventoryDto;
 
 public interface InventoryService {
 

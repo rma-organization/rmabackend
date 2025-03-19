@@ -1,6 +1,6 @@
 package com.mit.rma_web_application.service.impl;
 
-import com.mit.rma_web_application.dtos.InventoryDto;
+import com.mit.rma_web_application.dto.InventoryDto;
 import com.mit.rma_web_application.exception.ResourceNotFoundException;
 import com.mit.rma_web_application.mapper.InventoryMapper;
 import com.mit.rma_web_application.model.Inventory;

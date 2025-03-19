@@ -1,6 +1,6 @@
 package com.mit.rma_web_application.controller;
 
-import com.mit.rma_web_application.dtos.VendorDTO;
+import com.mit.rma_web_application.dto.VendorDTO;
 import com.mit.rma_web_application.service.VendorService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

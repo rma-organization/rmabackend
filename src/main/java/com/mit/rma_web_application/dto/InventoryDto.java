@@ -1,4 +1,4 @@
-package com.mit.rma_web_application.dtos;
+package com.mit.rma_web_application.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
