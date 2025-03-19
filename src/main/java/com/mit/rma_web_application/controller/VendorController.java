@@ -33,7 +33,6 @@ public class VendorController {
         return ResponseEntity.ok(vendor);
     }
 
-
     // Add a new vendor
     @PostMapping
     public ResponseEntity<VendorDTO> addVendor(@RequestBody VendorDTO vendorDTO) {
