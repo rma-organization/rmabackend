@@ -1,13 +1,13 @@
-package com.mit.rma_web_application.service.impl;
+package com.mit.rma_web_application.services.impl;
 
 import com.mit.rma_web_application.dtos.InventoryDto;
-import com.mit.rma_web_application.exception.ResourceNotFoundException;
-import com.mit.rma_web_application.mapper.InventoryMapper;
-import com.mit.rma_web_application.model.Inventory;
-import com.mit.rma_web_application.model.Vendor;
-import com.mit.rma_web_application.repository.InventoryRepository;
-import com.mit.rma_web_application.repository.VendorRepository;
-import com.mit.rma_web_application.service.InventoryService;
+import com.mit.rma_web_application.exceptions.ResourceNotFoundException;
+import com.mit.rma_web_application.mappers.InventoryMapper;
+import com.mit.rma_web_application.models.Inventory;
+import com.mit.rma_web_application.models.Vendor;
+import com.mit.rma_web_application.repositories.InventoryRepository;
+import com.mit.rma_web_application.repositories.VendorRepository;
+import com.mit.rma_web_application.services.InventoryService;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;

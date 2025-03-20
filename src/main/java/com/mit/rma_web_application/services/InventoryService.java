@@ -1,4 +1,4 @@
-package com.mit.rma_web_application.service;
+package com.mit.rma_web_application.services;
 
 import java.util.List;
 

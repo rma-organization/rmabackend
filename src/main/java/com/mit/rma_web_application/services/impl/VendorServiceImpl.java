@@ -1,10 +1,10 @@
-package com.mit.rma_web_application.service.impl;
+package com.mit.rma_web_application.services.impl;
 
 import com.mit.rma_web_application.dtos.VendorDTO;
-import com.mit.rma_web_application.exception.ResourceNotFoundException;
-import com.mit.rma_web_application.model.Vendor;
-import com.mit.rma_web_application.repository.VendorRepository;
-import com.mit.rma_web_application.service.VendorService;
+import com.mit.rma_web_application.exceptions.ResourceNotFoundException;
+import com.mit.rma_web_application.models.Vendor;
+import com.mit.rma_web_application.repositories.VendorRepository;
+import com.mit.rma_web_application.services.VendorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;

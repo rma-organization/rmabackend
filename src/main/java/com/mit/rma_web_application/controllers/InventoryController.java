@@ -1,8 +1,8 @@
 package com.mit.rma_web_application.controllers;
 
 import com.mit.rma_web_application.dtos.InventoryDto;
-import com.mit.rma_web_application.exception.ResourceNotFoundException;
-import com.mit.rma_web_application.service.InventoryService;
+import com.mit.rma_web_application.exceptions.ResourceNotFoundException;
+import com.mit.rma_web_application.services.InventoryService;
 
 import lombok.AllArgsConstructor;
 import org.slf4j.Logger;

@@ -1,7 +1,7 @@
-package com.mit.rma_web_application.repository;
+package com.mit.rma_web_application.repositories;
 
 
-import com.mit.rma_web_application.model.Inventory;
+import com.mit.rma_web_application.models.Inventory;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import org.springframework.data.domain.Page;

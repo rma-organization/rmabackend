@@ -1,8 +1,8 @@
-package com.mit.rma_web_application.mapper;
+package com.mit.rma_web_application.mappers;
 
 import com.mit.rma_web_application.dtos.InventoryDto;
-import com.mit.rma_web_application.model.Inventory;
-import com.mit.rma_web_application.model.Vendor;
+import com.mit.rma_web_application.models.Inventory;
+import com.mit.rma_web_application.models.Vendor;
 
 public class InventoryMapper {
 
