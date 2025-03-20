@@ -1,6 +1,6 @@
-package com.mit.rma_web_application.controller;
+package com.mit.rma_web_application.controllers;
 
-import com.mit.rma_web_application.dto.InventoryDto;
+import com.mit.rma_web_application.dtos.InventoryDto;
 import com.mit.rma_web_application.exception.ResourceNotFoundException;
 import com.mit.rma_web_application.service.InventoryService;
 
