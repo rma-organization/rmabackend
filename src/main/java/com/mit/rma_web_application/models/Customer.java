@@ -1,17 +1,9 @@
 package com.mit.rma_web_application.models;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @Entity
-@Getter
-@Setter
-@AllArgsConstructor
-@NoArgsConstructor
-@Table(name = "customers")
+@Table(name = "customers") // Explicitly define the table name
 public class Customer {
 
     @Id
@@ -20,4 +12,28 @@ public class Customer {
 
     @Column(nullable = false)
     private String name;
+
+    // Constructors
+    public Customer() {}
+
+    public Customer(String name) {
+        this.name = name;
+    }
+
+    // Getters and Setters
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
 }
