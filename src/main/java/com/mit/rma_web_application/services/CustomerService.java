@@ -1,7 +1,7 @@
-package com.mit.rma_web_application.service;
+package com.mit.rma_web_application.services;
 
-import com.mit.rma_web_application.model.Customer;
-import com.mit.rma_web_application.repository.CustomerRepository;
+import com.mit.rma_web_application.models.Customer;
+import com.mit.rma_web_application.repositories.CustomerRepository;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Optional;

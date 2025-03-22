@@ -1,11 +1,11 @@
-package com.mit.rma_web_application.mapper;
+package com.mit.rma_web_application.mappers;
 
-import com.mit.rma_web_application.dto.RequestDTO;
-import com.mit.rma_web_application.dto.VendorDTO;
-import com.mit.rma_web_application.dto.CustomerDTO;
-import com.mit.rma_web_application.model.Request;
-import com.mit.rma_web_application.model.Vendor;
-import com.mit.rma_web_application.model.Customer;
+import com.mit.rma_web_application.dtos.RequestDTO;
+import com.mit.rma_web_application.dtos.VendorDTO;
+import com.mit.rma_web_application.dtos.CustomerDTO;
+import com.mit.rma_web_application.models.Request;
+import com.mit.rma_web_application.models.Vendor;
+import com.mit.rma_web_application.models.Customer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;

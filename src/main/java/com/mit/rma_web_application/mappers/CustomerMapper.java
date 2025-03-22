@@ -1,7 +1,7 @@
-package com.mit.rma_web_application.mapper;
+package com.mit.rma_web_application.mappers;
 
-import com.mit.rma_web_application.dto.CustomerDTO;
-import com.mit.rma_web_application.model.Customer;
+import com.mit.rma_web_application.dtos.CustomerDTO;
+import com.mit.rma_web_application.models.Customer;
 import org.springframework.stereotype.Component;
 
 @Component

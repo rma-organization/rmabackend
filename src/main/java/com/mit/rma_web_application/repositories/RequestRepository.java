@@ -1,6 +1,6 @@
-package com.mit.rma_web_application.repository;
+package com.mit.rma_web_application.repositories;
 
-import com.mit.rma_web_application.model.Request;
+import com.mit.rma_web_application.models.Request;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;

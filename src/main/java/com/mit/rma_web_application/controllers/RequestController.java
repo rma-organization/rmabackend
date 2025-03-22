@@ -1,7 +1,7 @@
-package com.mit.rma_web_application.controller;
+package com.mit.rma_web_application.controllers;
 
-import com.mit.rma_web_application.dto.RequestDTO;
-import com.mit.rma_web_application.service.RequestService;
+import com.mit.rma_web_application.dtos.RequestDTO;
+import com.mit.rma_web_application.services.RequestService;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;

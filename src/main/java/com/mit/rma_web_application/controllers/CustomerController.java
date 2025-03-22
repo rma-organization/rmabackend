@@ -1,7 +1,7 @@
-package com.mit.rma_web_application.controller;
+package com.mit.rma_web_application.controllers;
 
-import com.mit.rma_web_application.model.Customer;
-import com.mit.rma_web_application.service.CustomerService;
+import com.mit.rma_web_application.models.Customer;
+import com.mit.rma_web_application.services.CustomerService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 

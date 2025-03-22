@@ -1,9 +1,9 @@
-package com.mit.rma_web_application.service;
+package com.mit.rma_web_application.services;
 
-import com.mit.rma_web_application.dto.RequestDTO;
-import com.mit.rma_web_application.mapper.RequestMapper;
-import com.mit.rma_web_application.model.Request;
-import com.mit.rma_web_application.repository.RequestRepository;
+import com.mit.rma_web_application.dtos.RequestDTO;
+import com.mit.rma_web_application.mappers.RequestMapper;
+import com.mit.rma_web_application.models.Request;
+import com.mit.rma_web_application.repositories.RequestRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
