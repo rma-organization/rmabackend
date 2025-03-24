@@ -7,16 +7,14 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.Arrays;
 import java.util.List;
 
 @Configuration
@@ -31,19 +29,25 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http.csrf(AbstractHttpConfigurer::disable) // Disable CSRF for stateless APIs
+        http
+                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // ✅ CORS Config
+                .csrf(csrf -> csrf.disable()) // ❌ Disable CSRF for REST APIs
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // ✅ Stateless session
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/login", "/api/auth/register").permitAll() // Allow login & signup
-                        .requestMatchers("/api/vendors/**").permitAll()  // ✅ Allow Vendor API
-                        .requestMatchers("/api/inventory/**").permitAll() // ✅ Allow Inventory API
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")  // Only admins can access these
-                        .requestMatchers("/api/engineer/**").hasRole("ENGINEER")  // Only engineers can access these
-                        .requestMatchers("/api/supplychain/**").hasRole("SUPPLYCHAIN")  // Only supply chain can access these
-                        .requestMatchers("/api/rma/**").hasRole("RMA")  // Only RMA users can access these
-                        .anyRequest().authenticated()  // Secure all other endpoints
+                        // Public Endpoints (Login & Register)
+                        .requestMatchers("/api/auth/login", "/api/auth/register").permitAll()
+                        // Open Access Endpoints
+                        .requestMatchers("/api/vendors/**", "/api/inventory/**").permitAll()
+                        // Role-Based Access Control
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/engineer/**").hasRole("ENGINEER")
+                        .requestMatchers("/api/supplychain/**").hasRole("SUPPLYCHAIN")
+                        .requestMatchers("/api/rma/**").hasRole("RMA")
+                        // Any other request must be authenticated
+                        .anyRequest().authenticated()
                 )
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Stateless session
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class); // Add JWT filter
+                // Add JWT Authentication Filter
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
@@ -52,19 +56,25 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
-        // Combine all frontend origins
+        // Allowed origins (React frontend)
         config.setAllowedOrigins(List.of(
                 "http://localhost:5173",
                 "http://localhost:3000",
                 "http://localhost:5174"
         ));
 
+        // Allowed HTTP methods
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
-        config.setAllowedHeaders(List.of("*")); // Allow all headers
-        config.setAllowCredentials(true); // Allow credentials (cookies, authorization headers, etc.)
 
+        // Allow all headers
+        config.setAllowedHeaders(List.of("*"));
+
+        // Allow credentials (cookies, auth headers)
+        config.setAllowCredentials(true);
+
+        // Apply CORS settings to all endpoints
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", config); // Apply to all endpoints
+        source.registerCorsConfiguration("/**", config);
 
         return source;
     }
@@ -76,6 +86,6 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder(); // Use BCrypt password encoding
+        return new BCryptPasswordEncoder(); // ✅ Secure password encoding
     }
 }
