@@ -6,6 +6,7 @@ import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Getter
@@ -25,7 +26,8 @@ public class Vendor {
 
     private LocalDateTime deletedAt;
 
-
+    @OneToMany(mappedBy = "vendor")
+    private List<Inventory> parts;
 
     // Optionally: Method for soft deletion of the vendor (if needed)
     public void softDelete() {
