@@ -89,6 +89,11 @@ public class AuthController {
         String token = jwtUtil.generateToken(userDetails.getUsername());
         return ResponseEntity.ok(new AuthResponse(token, authRequest.getRole()));
     }
+    @GetMapping("/users")
+    public ResponseEntity<List<User>> getAllUsers() {
+        List<User> allUsers = userRepository.findAll();  // Fetch all users, regardless of their approval status.
+        return ResponseEntity.ok(allUsers);
+    }
 
     /**
      * Endpoint to get all users with pending approval.
