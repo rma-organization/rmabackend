@@ -13,6 +13,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import java.time.LocalDateTime;
 
 import java.util.List;
 import java.util.Optional;
@@ -121,6 +122,12 @@ public class AuthController {
         }
 
         user.setApprovalStatus(approvelStatusDTO.getApprovalStatus());
+
+        // Set the approvedAt field to the current time when approval status is updated to "APPROVED"
+        if (ApprovalStatus.APPROVED.equals(approvelStatusDTO.getApprovalStatus())) {
+            user.setApprovedAt(LocalDateTime.now()); // Set the current time
+        }
+
         userRepository.save(user);
         return ResponseEntity.ok("User approval status updated successfully.");
     }
