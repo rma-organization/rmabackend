@@ -33,21 +33,34 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .csrf(AbstractHttpConfigurer::disable) // Disable CSRF for stateless APIs
+                .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/login", "/api/auth/register").permitAll() // Allow authentication routes
-                        .requestMatchers("/api/vendors/**").permitAll()  // Allow Vendor API
-                        .requestMatchers("/api/requests/**").permitAll() // Allow Requests API
-                        .requestMatchers("/api/customers/**").permitAll() // Allow Customers API
-                        .requestMatchers("/api/inventory/**").permitAll() // Allow Inventory API
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")  // Restricted to admins
-                        .requestMatchers("/api/engineer/**").hasRole("ENGINEER") // Restricted to engineers
-                        .requestMatchers("/api/supplychain/**").hasRole("SUPPLYCHAIN") // Restricted to supply chain users
-                        .requestMatchers("/api/rma/**").hasRole("RMA") // Restricted to RMA users
-                        .anyRequest().authenticated() // Secure all other endpoints
+                        //  Public Auth & User Approval Endpoints
+                        .requestMatchers(
+                                "/api/auth/login",
+                                "/api/auth/register",
+                                "/api/auth/users",           //  Make this public (or /pending-users)
+                                "/api/auth/pending-users",   //  Also public if you use this
+                                "/api/auth/approve"          // Allow approving without token
+                        ).permitAll()
+
+                        //  Other Open Endpoints
+                        .requestMatchers("/api/vendors/**").permitAll()
+                        .requestMatchers("/api/requests/**").permitAll()
+                        .requestMatchers("/api/customers/**").permitAll()
+                        .requestMatchers("/api/inventory/**").permitAll()
+
+                        // 🔐 Role-Secured Routes
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/engineer/**").hasRole("ENGINEER")
+                        .requestMatchers("/api/supplychain/**").hasRole("SUPPLYCHAIN")
+                        .requestMatchers("/api/rma/**").hasRole("RMA")
+
+                        // 🔐 All Other Requests
+                        .anyRequest().authenticated()
                 )
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Stateless session
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class); // Add JWT filter
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
@@ -61,12 +74,11 @@ public class SecurityConfig {
                 "http://localhost:5174"
         ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
-        config.setAllowedHeaders(List.of("*")); // Allow all headers
+        config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", config); // Apply CORS settings to all endpoints
-
+        source.registerCorsConfiguration("/**", config);
         return source;
     }
 
@@ -82,6 +94,6 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder(); // Use BCrypt password encoding
+        return new BCryptPasswordEncoder();
     }
 }
