@@ -19,6 +19,7 @@ public class ChatService {
     public ChatMessage saveMessage(ChatMessage chatMessage) {
         ChatMessageEntity entity = ChatMessageEntity.builder()
                 .sender(chatMessage.getSender())
+                .receiver(chatMessage.getReceiver()) // Make sure to set the receiver field
                 .content(chatMessage.getContent())
                 .type(chatMessage.getType())
                 .timestamp(LocalDateTime.now())
@@ -30,5 +31,16 @@ public class ChatService {
 
     public List<ChatMessageEntity> getAllMessages() {
         return chatMessageRepository.findAll();
+    }
+
+    /**
+     * Gets all messages exchanged between two users in both directions
+     * @param sender the first user
+     * @param receiver the second user
+     * @return List of messages exchanged between the users
+     */
+    public List<ChatMessageEntity> getMessagesBetweenUsers(String sender, String receiver) {
+        // Find messages where user1 is sender and user2 is receiver OR user2 is sender and user1 is receiver
+        return chatMessageRepository.findMessagesBetweenUsers(sender, receiver);
     }
 }

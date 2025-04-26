@@ -1,14 +1,14 @@
 package com.mit.rma_web_application.config;
 
-import com.mit.rma_web_application.dtos.ChatMessage;  // Use DTO, not Entity
+import com.mit.rma_web_application.dtos.ChatMessage;
 import com.mit.rma_web_application.models.MessageType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.event.EventListener;
 import org.springframework.messaging.simp.SimpMessageSendingOperations;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
-import org.springframework.context.event.EventListener;
 
 @Component
 @RequiredArgsConstructor
@@ -19,13 +19,13 @@ public class WebSocketEventListener {
     @EventListener
     public void handleWebSocketDisconnectListener(SessionDisconnectEvent event) {
         StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(event.getMessage());
-        String username = (String) headerAccessor.getSessionAttributes().get("username");
+        String userEmail = (String) headerAccessor.getSessionAttributes().get("userEmail");
 
-        if (username != null) {
-            log.info("User disconnected: {}", username);
-            ChatMessage chatMessage = ChatMessage.builder()  // Use DTO here
+        if (userEmail != null) {
+            log.info("User disconnected: {}", userEmail);
+            ChatMessage chatMessage = ChatMessage.builder()
                     .type(MessageType.LEAVE)
-                    .sender(username)
+                    .sender(userEmail)
                     .build();
 
             messageTemplate.convertAndSend("/topic/public", chatMessage);

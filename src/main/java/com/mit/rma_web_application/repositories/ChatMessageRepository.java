@@ -1,5 +1,3 @@
-// package: com.mit.rma_web_application.repositories
-
 package com.mit.rma_web_application.repositories;
 
 import com.mit.rma_web_application.models.ChatMessageEntity;
@@ -15,6 +13,6 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessageEntity, 
             "(m.sender = :sender AND m.receiver = :receiver) OR " +
             "(m.sender = :receiver AND m.receiver = :sender) " +
             "ORDER BY m.timestamp ASC")
-    List<ChatMessageEntity> findChatBetweenUsers(@Param("sender") String sender,
-                                                 @Param("receiver") String receiver);
+    List<ChatMessageEntity> findMessagesBetweenUsers(@Param("sender") String sender,
+                                                     @Param("receiver") String receiver);
 }
