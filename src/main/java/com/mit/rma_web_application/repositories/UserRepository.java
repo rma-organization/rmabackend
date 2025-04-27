@@ -18,4 +18,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findByApprovalStatus(ApprovalStatus approvalStatus); // Find users by approval status
 
     Optional<User> findById(Long id); // Find user by ID (no need for @NonNull)
+
+    String username(String username);
 }

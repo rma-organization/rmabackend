@@ -12,11 +12,13 @@ public class ChatRestController {
     private final ChatService chatService;
 
     public ChatRestController(ChatService chatService) {
+
         this.chatService = chatService;
     }
 
     @GetMapping("/messages")
     public List<ChatMessageEntity> getMessages() {
+
         return chatService.getAllMessages();
     }
 
