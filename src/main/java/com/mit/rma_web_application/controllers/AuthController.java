@@ -1,13 +1,9 @@
 
 package com.mit.rma_web_application.controllers;
+
 import com.mit.rma_web_application.config.JwtUtil;
-import com.mit.rma_web_application.dtos.ApprovelStatusDTO;
-import com.mit.rma_web_application.dtos.AuthRequest;
-import com.mit.rma_web_application.dtos.AuthResponse;
-import com.mit.rma_web_application.dtos.RegisterRequestDTO;
-import com.mit.rma_web_application.models.ApprovalStatus;
-import com.mit.rma_web_application.models.Role;
-import com.mit.rma_web_application.models.User;
+import com.mit.rma_web_application.dtos.*;
+import com.mit.rma_web_application.models.*;
 import com.mit.rma_web_application.repositories.UserRepository;
 import com.mit.rma_web_application.services.CustomUserDetailsService;
 import com.mit.rma_web_application.services.interfaces.IUserService;
@@ -17,11 +13,13 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import java.time.LocalDateTime;
 
+import java.util.List;
 import java.util.Optional;
 
 @RestController
-@CrossOrigin(origins="http://localhost:5174")
+@CrossOrigin(origins = "http://localhost:5173")
 @RequestMapping("/api/auth")
 public class AuthController {
 
@@ -45,21 +43,16 @@ public class AuthController {
      */
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody RegisterRequestDTO registerRequest) {
-        // Check if the username is already taken
         if (userRepository.existsByUsername(registerRequest.getUsername())) {
             return ResponseEntity.badRequest().body("Username is already taken.");
         }
-
-        // Check if the email is already in use
         if (userRepository.existsByEmail(registerRequest.getEmail())) {
             return ResponseEntity.badRequest().body("Email is already in use.");
         }
-
-        // Register the user (assuming the service handles role assignment and password encoding)
         try {
-            User registeredUser = userService.registerUser(registerRequest);
+            userService.registerUser(registerRequest);
             return ResponseEntity.ok("User registered successfully. Awaiting admin approval.");
-        } catch (IllegalArgumentException e) {
+        } catch (Exception e) {
             return ResponseEntity.badRequest().body("Error: " + e.getMessage());
         }
     }
@@ -77,17 +70,14 @@ public class AuthController {
 
         User user = userOptional.get();
 
-        // Check if the user is approved by the admin
-        if (!user.getApprovalStatus().equals(ApprovalStatus.APPROVED)) {
+        if (!ApprovalStatus.APPROVED.equals(user.getApprovalStatus())) {
             return ResponseEntity.status(403).body("User is not approved by admin.");
         }
 
-        // Check if the requested role matches the user's assigned role
         if (!user.getRoles().contains(authRequest.getRole())) {
             return ResponseEntity.status(403).body("User does not have the requested role.");
         }
 
-        // Authenticate the user
         try {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(authRequest.getUsername(), authRequest.getPassword())
@@ -96,42 +86,49 @@ public class AuthController {
             return ResponseEntity.status(401).body("Invalid credentials");
         }
 
-        // Generate JWT token
         UserDetails userDetails = userDetailsService.loadUserByUsername(authRequest.getUsername());
         String token = jwtUtil.generateToken(userDetails.getUsername());
-
-        // Return the token and selected role in the response
         return ResponseEntity.ok(new AuthResponse(token, authRequest.getRole()));
+    }
+    @GetMapping("/users")
+    public ResponseEntity<List<User>> getAllUsers() {
+        List<User> allUsers = userRepository.findAll();  // Fetch all users, regardless of their approval status.
+        return ResponseEntity.ok(allUsers);
     }
 
     /**
-     * Endpoint for approving a user via query parameter.
+     * Endpoint to get all users with pending approval.
+     */
+    @GetMapping("/pending-users")
+    public ResponseEntity<List<User>> getPendingUsers() {
+        List<User> pendingUsers = userRepository.findByApprovalStatus(ApprovalStatus.PENDING);
+        return ResponseEntity.ok(pendingUsers);
+    }
+
+    /**
+     * Endpoint for approving a user.
      * Only an admin should be allowed to approve a user.
      */
     @PostMapping("/approve")
     public ResponseEntity<?> approveUser(@RequestBody ApprovelStatusDTO approvelStatusDTO) {
-        // Fetch the user by username
         Optional<User> userOptional = userRepository.findByUsername(approvelStatusDTO.getUsername());
-
         if (userOptional.isEmpty()) {
             return ResponseEntity.badRequest().body("User not found");
         }
 
         User user = userOptional.get();
-
-        if (approvelStatusDTO.getApprovalStatus().equals(ApprovalStatus.APPROVED)) {
-            // Check if the user is already approved
-            if (user.getApprovalStatus().equals(ApprovalStatus.APPROVED)) {
-                return ResponseEntity.status(400).body("User is already approved.");
-            }
+        if (ApprovalStatus.APPROVED.equals(user.getApprovalStatus())) {
+            return ResponseEntity.status(400).body("User is already approved.");
         }
 
-        // Update the approval status of the user
-        user.setApprovalStatus(approvelStatusDTO.getApprovalStatus());  // Use the setApprovalStatus method
+        user.setApprovalStatus(approvelStatusDTO.getApprovalStatus());
 
-        // Save the updated user back to the database
+        // Set the approvedAt field to the current time when approval status is updated to "APPROVED"
+        if (ApprovalStatus.APPROVED.equals(approvelStatusDTO.getApprovalStatus())) {
+            user.setApprovedAt(LocalDateTime.now()); // Set the current time
+        }
+
         userRepository.save(user);
-
         return ResponseEntity.ok("User approval status updated successfully.");
     }
 
@@ -141,11 +138,6 @@ public class AuthController {
     @GetMapping("/validate")
     public ResponseEntity<?> validateToken(@RequestParam String token, @RequestParam String username) {
         boolean isValid = jwtUtil.validateToken(token, username);
-
-        if (isValid) {
-            return ResponseEntity.ok("Valid Token");
-        } else {
-            return ResponseEntity.status(401).body("Invalid Token");
-        }
+        return isValid ? ResponseEntity.ok("Valid Token") : ResponseEntity.status(401).body("Invalid Token");
     }
 }
