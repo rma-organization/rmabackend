@@ -32,32 +32,18 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .csrf(AbstractHttpConfigurer::disable)
+                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // Enable CORS with your configuration
+                .csrf(AbstractHttpConfigurer::disable) // Disable CSRF for stateless APIs
                 .authorizeHttpRequests(auth -> auth
-                        //  Public Auth & User Approval Endpoints
-                        .requestMatchers(
-                                "/api/auth/login",
-                                "/api/auth/register",
-                                "/api/auth/users",           //  Make this public (or /pending-users)
-                                "/api/auth/pending-users",   //  Also public if you use this
-                                "/api/auth/approve"          // Allow approving without token
-                        ).permitAll()
-
-                        //  Other Open Endpoints
-                        .requestMatchers("/api/vendors/**").permitAll()
-                        .requestMatchers("/api/requests/**").permitAll()
-                        .requestMatchers("/api/customers/**").permitAll()
-                        .requestMatchers("/api/inventory/**").permitAll()
-
-                        // 🔐 Role-Secured Routes
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/engineer/**").hasRole("ENGINEER")
-                        .requestMatchers("/api/supplychain/**").hasRole("SUPPLYCHAIN")
-                        .requestMatchers("/api/rma/**").hasRole("RMA")
-
-                        // 🔐 All Other Requests
-                        .anyRequest().authenticated()
+                        .requestMatchers("/api/auth/login", "/api/auth/register").permitAll() // Allow login & signup
+                        .requestMatchers("/api/vendors/**").permitAll()  // Allow Vendor API
+                        .requestMatchers("/api/inventory/**").permitAll() // Allow Inventory API
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")  // Only admins can access these
+                        .requestMatchers("/api/engineer/**").hasRole("ENGINEER")  // Only engineers can access these
+                        .requestMatchers("/api/supplychain/**").hasRole("SUPPLYCHAIN")  // Only supply chain can access these
+                        .requestMatchers("/api/rma/**").hasRole("RMA")  // Only RMA users can access these
+                        .requestMatchers("/ws/**").permitAll() // Allow WebSocket connections
+                        .anyRequest().authenticated()  // Secure all other endpoints (must be last)
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
@@ -78,6 +64,13 @@ public class SecurityConfig {
         config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+<<<<<<< HEAD
+        source.registerCorsConfiguration("/**", config); // Apply to all endpoints
+
+        return source;
+    }
+
+=======
         source.registerCorsConfiguration("/**", config);
         return source;
     }
@@ -87,6 +80,7 @@ public class SecurityConfig {
         return new CorsFilter(corsConfigurationSource());
     }
 
+>>>>>>> dev
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
         return authConfig.getAuthenticationManager();
