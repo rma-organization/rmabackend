@@ -43,19 +43,23 @@ public class SecurityConfig {
                                 "/api/auth/pending-users",
                                 "/api/auth/approve"
                         ).permitAll()
+
                         .requestMatchers("/api/vendors/**").permitAll()
                         .requestMatchers("/api/requests/**").permitAll()
                         .requestMatchers("/api/customers/**").permitAll()
                         .requestMatchers("/api/inventory/**").permitAll()
                         .requestMatchers("/ws/**").permitAll()
 
-                        // Role-secured Endpoints
+                        // ✅ Allow /api/notifications to authenticated users
+                        .requestMatchers("/api/notifications/**").authenticated()
+
+                        // Role-based endpoints
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/engineer/**").hasRole("ENGINEER")
                         .requestMatchers("/api/supplychain/**").hasRole("SUPPLYCHAIN")
                         .requestMatchers("/api/rma/**").hasRole("RMA")
 
-                        // Catch-all: All others require authentication
+                        // All other endpoints require authentication
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
