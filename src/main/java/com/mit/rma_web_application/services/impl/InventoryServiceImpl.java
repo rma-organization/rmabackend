@@ -55,7 +55,7 @@ public class InventoryServiceImpl implements InventoryService {
     @Override
     public List<InventoryDto> getAllInventory(int page, int size) {
         List<Inventory> inventoryList = inventoryRepository.findAll().stream()
-                .filter(inventory -> !inventory.isDeleted()) // Exclude soft-deleted items
+                .filter(inventory -> !inventory.isDeleted())
                 .collect(Collectors.toList());
 
         return inventoryList.stream()
@@ -67,6 +67,9 @@ public class InventoryServiceImpl implements InventoryService {
     public InventoryDto updateInventory(Long id, InventoryDto inventoryDto) {
         Inventory inventory = inventoryRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Inventory not found"));
+
+        Vendor vendor = vendorRepository.findById(inventoryDto.getVendorId())
+                .orElseThrow(() -> new ResourceNotFoundException("Vendor not found"));
 
         inventory.setName(inventoryDto.getName());
         inventory.setQuantity(inventoryDto.getQuantity());
@@ -81,6 +84,10 @@ public class InventoryServiceImpl implements InventoryService {
         inventory.setInBoxSerialNumber(inventoryDto.getInBoxSerialNumber());
         inventory.setBoxSerialNumber(inventoryDto.getBoxSerialNumber());
         inventory.setStatus(inventoryDto.getStatus());
+        inventory.setAirwayBillNumber(inventoryDto.getAirwaybillnumber());
+        inventory.setCurrency(inventoryDto.getCurrency());
+        inventory.setAmount(inventoryDto.getAmount());
+        inventory.setVendor(vendor); // ✅ correct setting of vendor
 
         Inventory updatedInventory = inventoryRepository.save(inventory);
         logger.info("Updated inventory item with ID: {}", updatedInventory.getId());
@@ -121,11 +128,10 @@ public class InventoryServiceImpl implements InventoryService {
 
         inventory.setVendor(vendor);
 
-        entityManager.detach(inventory);  // Ensure it's treated as a new transaction
+        entityManager.detach(inventory);
         Inventory updatedInventory = inventoryRepository.save(inventory);
         entityManager.flush();
 
         return InventoryMapper.mapToInventoryDto(updatedInventory);
     }
-
 }
