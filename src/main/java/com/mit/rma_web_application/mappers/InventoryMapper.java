@@ -34,7 +34,10 @@ public class InventoryMapper {
                 inventoryDto.getStatus(),
                 inventoryDto.getCreatedAt(),
                 inventoryDto.getUpdatedAt(),
-                inventoryDto.getDeletedAt() // Soft delete field
+                inventoryDto.getDeletedAt(), // Soft delete field
+                inventoryDto.getCurrency(),
+                inventoryDto.getAmount(),
+                inventoryDto.getAirwaybillnumber()
         );
     }
 
@@ -62,7 +65,10 @@ public class InventoryMapper {
                 inventory.getStatus(),
                 inventory.getCreatedAt(),
                 inventory.getUpdatedAt(),
-                inventory.getDeletedAt() // Soft delete field
+                inventory.getDeletedAt(), // Soft delete field
+                inventory.getAirwayBillNumber(),
+                inventory.getCurrency(),
+                inventory.getAmount()
         );
     }
 }
