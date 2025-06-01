@@ -39,9 +39,12 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/auth/login",
                                 "/api/auth/register",
-                                "/api/auth/users",           //  Make this public (or /pending-users)
-                                "/api/auth/pending-users",   //  Also public if you use this
-                                "/api/auth/approve"          // Allow approving without token
+                                "/api/auth/users",
+                                "/api/auth/pending-users",
+                                "/api/auth/approve",
+                                "/api/auth/forgot-password",
+                                "/api/auth/reset-password"
+                                // Allow approving without token
                         ).permitAll()
 
                         //  Other Open Endpoints
