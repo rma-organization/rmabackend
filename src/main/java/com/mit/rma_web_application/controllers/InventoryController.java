@@ -1,3 +1,4 @@
+
 package com.mit.rma_web_application.controllers;
 
 import com.mit.rma_web_application.dtos.InventoryDto;
@@ -27,7 +28,6 @@ public class InventoryController {
     private static final Logger logger = LoggerFactory.getLogger(InventoryController.class);
     private final InventoryService inventoryService;
 
-    // Create a new inventory item
     @PostMapping
     public ResponseEntity<?> createInventory(@Valid @RequestBody InventoryDto inventoryDto) {
         if (inventoryDto.getVendorId() == null || inventoryDto.getVendorId() <= 0) {
@@ -44,7 +44,6 @@ public class InventoryController {
         }
     }
 
-    // Get a specific inventory item by ID
     @GetMapping("/{id}")
     public ResponseEntity<?> getInventoryById(@PathVariable("id") @Positive Long inventoryId) {
         try {
@@ -56,17 +55,30 @@ public class InventoryController {
         }
     }
 
-    // Get a paginated list of all inventory items
     @GetMapping
     public ResponseEntity<List<InventoryDto>> getAllInventory(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
-    ) {
+            @RequestParam(defaultValue = "10") int size) {
         List<InventoryDto> inventoryList = inventoryService.getAllInventory(page, size);
         return ResponseEntity.ok(inventoryList);
     }
 
-    // Update an inventory item
+    @GetMapping("/search")
+    public ResponseEntity<List<InventoryDto>> searchInventory(
+            @RequestParam String query,
+            @RequestParam(defaultValue = "10") int limit) {
+        try {
+            List<InventoryDto> results = inventoryService.searchInventoryByPartNumber(query);
+            if (limit > 0 && results.size() > limit) {
+                results = results.subList(0, limit);
+            }
+            return ResponseEntity.ok(results);
+        } catch (Exception e) {
+            logger.error("Error during inventory search: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<?> updateInventory(
             @PathVariable("id") @Positive Long inventoryId,
@@ -84,7 +96,6 @@ public class InventoryController {
         }
     }
 
-    // Soft delete an inventory item
     @PutMapping("/soft-delete/{id}")
     public ResponseEntity<?> softDeleteInventory(@PathVariable Long id) {
         try {
@@ -99,12 +110,10 @@ public class InventoryController {
         }
     }
 
-    // Update vendor for an inventory item
     @PutMapping("/{inventoryId}/vendor/{vendorId}")
     public ResponseEntity<?> updateVendor(
             @PathVariable Long inventoryId,
-            @PathVariable Long vendorId
-    ) {
+            @PathVariable Long vendorId) {
         try {
             InventoryDto updatedInventory = inventoryService.updateVendor(inventoryId, vendorId);
             return ResponseEntity.ok(updatedInventory);

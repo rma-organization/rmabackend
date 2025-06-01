@@ -29,12 +29,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(@NonNull HttpServletRequest request) throws ServletException {
         String path = request.getRequestURI();
-        // Allow login & signup without JWT authentication
-        return path.startsWith("/api/auth/login") || path.startsWith("/api/auth/register");
+
+        // Skip JWT filtering for public endpoints
+        return path.startsWith("/api/auth/")
+                || path.startsWith("/api/vendors/")
+                || path.startsWith("/api/requests/")
+                || path.startsWith("/api/customers/")
+                || path.startsWith("/api/inventory/")
+                || path.startsWith("/ws/");
     }
 
     @Override
-    protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain chain)
+    protected void doFilterInternal(@NonNull HttpServletRequest request,
+                                    @NonNull HttpServletResponse response,
+                                    @NonNull FilterChain chain)
             throws ServletException, IOException {
 
         String authorizationHeader = request.getHeader("Authorization");
@@ -64,6 +72,3 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         chain.doFilter(request, response);
     }
 }
-
-
-

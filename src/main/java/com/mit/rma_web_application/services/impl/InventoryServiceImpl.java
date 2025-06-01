@@ -29,6 +29,9 @@ public class InventoryServiceImpl implements InventoryService {
     private final InventoryRepository inventoryRepository;
     private final VendorRepository vendorRepository;
 
+    @PersistenceContext
+    private EntityManager entityManager;
+
     @Override
     public InventoryDto createInventory(InventoryDto inventoryDto) {
         logger.info("Creating inventory with name: {}", inventoryDto.getName());
@@ -55,10 +58,43 @@ public class InventoryServiceImpl implements InventoryService {
     @Override
     public List<InventoryDto> getAllInventory(int page, int size) {
         List<Inventory> inventoryList = inventoryRepository.findAll().stream()
-                .filter(inventory -> !inventory.isDeleted()) // Exclude soft-deleted items
+                .filter(inventory -> !inventory.isDeleted())
                 .collect(Collectors.toList());
 
         return inventoryList.stream()
+                .map(InventoryMapper::mapToInventoryDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<InventoryDto> searchInventoryByPartNumber(String query) {
+        if (query == null || query.trim().isEmpty()) {
+            return List.of();
+        }
+
+        List<Inventory> allInventory = inventoryRepository.findAll().stream()
+                .filter(inventory -> !inventory.isDeleted())
+                .collect(Collectors.toList());
+
+        String searchQuery = query.trim().toLowerCase();
+
+        List<Inventory> filteredInventory = allInventory.stream()
+                .filter(inventory -> {
+                    String partNumber = inventory.getInBoxPartNumber();
+                    if (partNumber != null) {
+                        String lowerCasePartNumber = partNumber.toLowerCase();
+                        // Manual character-by-character search
+                        for (int i = 0; i <= lowerCasePartNumber.length() - searchQuery.length(); i++) {
+                            if (lowerCasePartNumber.substring(i, i + searchQuery.length()).equals(searchQuery)) {
+                                return true;
+                            }
+                        }
+                    }
+                    return false;
+                })
+                .collect(Collectors.toList());
+
+        return filteredInventory.stream()
                 .map(InventoryMapper::mapToInventoryDto)
                 .collect(Collectors.toList());
     }
@@ -107,9 +143,6 @@ public class InventoryServiceImpl implements InventoryService {
         logger.info("Deleted inventory item with ID: {}", id);
     }
 
-    @PersistenceContext
-    private EntityManager entityManager;
-
     @Override
     @Transactional
     public InventoryDto updateVendor(Long inventoryId, Long vendorId) {
@@ -120,12 +153,10 @@ public class InventoryServiceImpl implements InventoryService {
                 .orElseThrow(() -> new ResourceNotFoundException("Vendor not found"));
 
         inventory.setVendor(vendor);
-
-        entityManager.detach(inventory);  // Ensure it's treated as a new transaction
+        entityManager.detach(inventory);
         Inventory updatedInventory = inventoryRepository.save(inventory);
         entityManager.flush();
 
         return InventoryMapper.mapToInventoryDto(updatedInventory);
     }
-
 }
