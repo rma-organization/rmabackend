@@ -27,7 +27,6 @@ public class InventoryController {
     private static final Logger logger = LoggerFactory.getLogger(InventoryController.class);
     private final InventoryService inventoryService;
 
-    // Create a new inventory item
     @PostMapping
     public ResponseEntity<?> createInventory(@Valid @RequestBody InventoryDto inventoryDto) {
         if (inventoryDto.getVendorId() == null || inventoryDto.getVendorId() <= 0) {
@@ -38,25 +37,23 @@ public class InventoryController {
             InventoryDto savedInventory = inventoryService.createInventory(inventoryDto);
             return new ResponseEntity<>(savedInventory, HttpStatus.CREATED);
         } catch (Exception e) {
-            logger.error("Error creating inventory: {}", e.getMessage());
+            logger.error("Error creating inventory: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "An unexpected error occurred while creating the inventory item"));
+                    .body(Map.of("error", "An error occurred while creating the inventory item"));
         }
     }
 
-    // Get a specific inventory item by ID
     @GetMapping("/{id}")
-    public ResponseEntity<?> getInventoryById(@PathVariable("id") @Positive Long inventoryId) {
+    public ResponseEntity<?> getInventoryById(@PathVariable("id") @Positive Long id) {
         try {
-            InventoryDto inventoryDto = inventoryService.getInventoryById(inventoryId);
+            InventoryDto inventoryDto = inventoryService.getInventoryById(id);
             return ResponseEntity.ok(inventoryDto);
         } catch (ResourceNotFoundException e) {
-            logger.error("Inventory not found with id: {}", inventoryId);
+            logger.warn("Inventory not found with ID: {}", id);
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Inventory not found"));
         }
     }
 
-    // Get a paginated list of all inventory items
     @GetMapping
     public ResponseEntity<List<InventoryDto>> getAllInventory(
             @RequestParam(defaultValue = "0") int page,
@@ -66,51 +63,50 @@ public class InventoryController {
         return ResponseEntity.ok(inventoryList);
     }
 
-    // Update an inventory item
     @PutMapping("/{id}")
     public ResponseEntity<?> updateInventory(
-            @PathVariable("id") @Positive Long inventoryId,
+            @PathVariable("id") @Positive Long id,
             @Valid @RequestBody InventoryDto updateInventory) {
+
         if (updateInventory.getVendorId() == null || updateInventory.getVendorId() <= 0) {
             return ResponseEntity.badRequest().body(Map.of("error", "Invalid Vendor ID"));
         }
 
         try {
-            InventoryDto updatedInventory = inventoryService.updateInventory(inventoryId, updateInventory);
-            return ResponseEntity.ok(updatedInventory);
+            InventoryDto updated = inventoryService.updateInventory(id, updateInventory);
+            return ResponseEntity.ok(updated);
         } catch (ResourceNotFoundException e) {
-            logger.error("Error updating inventory: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Inventory not found"));
+            logger.warn("Inventory update failed for ID {}: {}", id, e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
         }
     }
 
-    // Soft delete an inventory item
     @PutMapping("/soft-delete/{id}")
-    public ResponseEntity<?> softDeleteInventory(@PathVariable Long id) {
+    public ResponseEntity<?> softDeleteInventory(@PathVariable("id") @Positive Long id) {
         try {
             inventoryService.softDeleteInventory(id);
-            return ResponseEntity.ok("Item soft deleted successfully.");
+            return ResponseEntity.ok(Map.of("message", "Item soft deleted successfully"));
         } catch (ResourceNotFoundException e) {
-            logger.error("Item not found for soft deletion: {}", id);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Item not found for deletion.");
+            logger.warn("Soft delete failed for ID {}: {}", id, e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Item not found for deletion"));
         } catch (Exception e) {
-            logger.error("Error soft deleting item: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error soft deleting item: " + e.getMessage());
+            logger.error("Error during soft delete for ID {}: {}", id, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Internal error during soft deletion"));
         }
     }
 
-    // Update vendor for an inventory item
     @PutMapping("/{inventoryId}/vendor/{vendorId}")
     public ResponseEntity<?> updateVendor(
-            @PathVariable Long inventoryId,
-            @PathVariable Long vendorId
+            @PathVariable("inventoryId") @Positive Long inventoryId,
+            @PathVariable("vendorId") @Positive Long vendorId
     ) {
         try {
             InventoryDto updatedInventory = inventoryService.updateVendor(inventoryId, vendorId);
             return ResponseEntity.ok(updatedInventory);
         } catch (ResourceNotFoundException e) {
-            logger.error("Error updating vendor: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Inventory or Vendor not found"));
+            logger.warn("Update vendor failed: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
         }
     }
 }
