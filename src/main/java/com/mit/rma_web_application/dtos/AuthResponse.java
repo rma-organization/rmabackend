@@ -13,5 +13,5 @@ import lombok.Setter;
 @NoArgsConstructor
 public class AuthResponse {
     private String token;  // JWT token
-    private Role role;   // Role of the authenticated user
+    private String role;   // Role of the authenticated user
 }

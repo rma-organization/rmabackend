@@ -44,6 +44,10 @@ public class Request {
     private Customer customer;
 
     private Integer requestedUserId;
+
+    @Column(name = "requested_by") // ✅ New field for tracking who created the request
+    private String requestedBy;
+
     private String description;
 
     @CreatedDate

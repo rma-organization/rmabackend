@@ -1,19 +1,23 @@
+//
+//
 //package com.mit.rma_web_application.config;
 //
 //import io.jsonwebtoken.Claims;
 //import io.jsonwebtoken.Jwts;
 //import io.jsonwebtoken.SignatureAlgorithm;
 //import io.jsonwebtoken.security.Keys;
+//import org.springframework.security.core.userdetails.UserDetails;
 //import org.springframework.stereotype.Component;
 //
 //import java.security.Key;
-//import java.util.Date;
+//import java.util.*;
 //import java.util.function.Function;
+//import java.util.stream.Collectors;
 //
 //@Component
 //public class JwtUtil {
 //
-//    private static final String SECRET_KEY = "YnruiT2QocJh06Lt91RRC9ymBAZbB9aDA7NJELPNn8A=";  // Change this to a strong key
+//    private static final String SECRET_KEY = "YnruiT2QocJh06Lt91RRC9ymBAZbB9aDA7NJELPNn8A=";
 //
 //    private Key getSigningKey() {
 //        return Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
@@ -44,13 +48,33 @@
 //        return extractClaim(token, Claims::getExpiration).before(new Date());
 //    }
 //
-//    public String generateToken(String username) {
+//    // ✅ Generate token and include roles as a comma-separated string
+//    public String generateToken(UserDetails userDetails) {
+//        String roles = userDetails.getAuthorities().stream()
+//                .map(auth -> auth.getAuthority())
+//                .collect(Collectors.joining(",")); // e.g., "ROLE_ADMIN,ROLE_ENGINEER"
+//
 //        return Jwts.builder()
-//                .setSubject(username)
+//                .setSubject(userDetails.getUsername())
+//                .claim("roles", roles)
 //                .setIssuedAt(new Date(System.currentTimeMillis()))
-//                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10))  // 10 hours
+//                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)) // 10 hours
 //                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
 //                .compact();
+//    }
+//
+//    // ✅ Extract roles from token
+//    public List<String> extractRoles(String token) {
+//        Claims claims = extractAllClaims(token);
+//        Object rolesObj = claims.get("roles");
+//
+//        if (rolesObj instanceof String rolesString) {
+//            return Arrays.stream(rolesString.split(","))
+//                    .map(String::trim)
+//                    .collect(Collectors.toList());
+//        }
+//
+//        return Collections.emptyList();
 //    }
 //}
 
@@ -60,16 +84,17 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
-import java.util.Date;
+import java.util.*;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Component
 public class JwtUtil {
 
-    // Use a strong Base64 encoded secret key (make sure length >= 256 bits for HS256)
     private static final String SECRET_KEY = "YnruiT2QocJh06Lt91RRC9ymBAZbB9aDA7NJELPNn8A=";
 
     private Key getSigningKey() {
@@ -101,12 +126,31 @@ public class JwtUtil {
         return extractClaim(token, Claims::getExpiration).before(new Date());
     }
 
-    public String generateToken(String username) {
+    // Generate token with roles included as comma-separated string
+    public String generateToken(UserDetails userDetails) {
+        String roles = userDetails.getAuthorities().stream()
+                .map(auth -> auth.getAuthority())
+                .collect(Collectors.joining(","));
+
         return Jwts.builder()
-                .setSubject(username)
+                .setSubject(userDetails.getUsername())
+                .claim("roles", roles)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10))  // 10 hours
+                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)) // 10 hours
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
+    }
+
+    // Extract roles list from token
+    public List<String> extractRoles(String token) {
+        Claims claims = extractAllClaims(token);
+        Object rolesObj = claims.get("roles");
+
+        if (rolesObj instanceof String rolesString) {
+            return Arrays.stream(rolesString.split(","))
+                    .map(String::trim)
+                    .collect(Collectors.toList());
+        }
+        return Collections.emptyList();
     }
 }

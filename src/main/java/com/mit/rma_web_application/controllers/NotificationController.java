@@ -1,88 +1,4 @@
-//package com.mit.rma_web_application.controllers;
-//
-//import com.mit.rma_web_application.models.Notification;
-//import com.mit.rma_web_application.services.interfaces.NotificationService;
-//import org.springframework.beans.factory.annotation.Autowired;
-//import org.springframework.http.ResponseEntity;
-//import org.springframework.web.bind.annotation.*;
-//
-//import java.security.Principal;
-//import java.util.List;
-//
-//@RestController
-//@RequestMapping("/api/notifications")
-//public class NotificationController {
-//
-//    @Autowired
-//    private NotificationService notificationService;
-//
-//    // Get notifications for the currently logged-in user (based on JWT principal)
-//    @GetMapping
-//    public ResponseEntity<List<Notification>> getUserNotifications(Principal principal) {
-//        String username = principal.getName();
-//        List<Notification> notifications = notificationService.getUserNotifications(username);
-//        return ResponseEntity.ok(notifications);
-//    }
-//}
-//package com.mit.rma_web_application.controllers;
-//
-//import com.mit.rma_web_application.models.Notification;
-//import com.mit.rma_web_application.services.interfaces.NotificationService;
-//import org.springframework.beans.factory.annotation.Autowired;
-//import org.springframework.http.ResponseEntity;
-//import org.springframework.web.bind.annotation.*;
-//
-//import java.security.Principal;
-//import java.util.List;
-//
-//@RestController
-//@RequestMapping("/api/notifications")
-//public class NotificationController {
-//
-//    @Autowired
-//    private NotificationService notificationService;
-//
-//    @GetMapping
-//    public ResponseEntity<List<Notification>> getUserNotifications(Principal principal) {
-//        String username = principal.getName();
-//        return ResponseEntity.ok(notificationService.getUserNotifications(username));
-//    }
-//}
 
-//package com.mit.rma_web_application.controllers;
-//
-//import com.mit.rma_web_application.models.Notification;
-//import com.mit.rma_web_application.services.interfaces.NotificationService;
-//import org.springframework.beans.factory.annotation.Autowired;
-//import org.springframework.http.ResponseEntity;
-//import org.springframework.web.bind.annotation.*;
-//
-//import java.security.Principal;
-//import java.util.List;
-//
-//@RestController
-//@RequestMapping("/api/notifications")
-//@CrossOrigin(origins = "http://localhost:5173") // or whatever your React URL is
-//public class NotificationController {
-//
-//    @Autowired
-//    private NotificationService notificationService;
-//
-//    @GetMapping
-//    public ResponseEntity<List<Notification>> getUserNotifications(Principal principal) {
-//        String username = principal.getName();
-//        return ResponseEntity.ok(notificationService.getUserNotifications(username));
-//    }
-//
-//    @PostMapping("/send")
-//    public ResponseEntity<Notification> sendNotification(@RequestParam String recipient,
-//                                                         @RequestParam String message,
-//                                                         @RequestParam String type) {
-//        return ResponseEntity.ok(
-//                notificationService.sendNotification(recipient, message, type)
-//        );
-//    }
-//}
 
 package com.mit.rma_web_application.controllers;
 
@@ -102,17 +18,78 @@ public class NotificationController {
     @Autowired
     private NotificationService notificationService;
 
+    // Get notifications by role
     @GetMapping("/role")
     public ResponseEntity<List<Notification>> getRoleNotifications(@RequestHeader("Role") String role) {
         return ResponseEntity.ok(notificationService.getRoleNotifications(role));
     }
 
+    // Get notifications for logged-in user
+    @GetMapping("/user")
+    public ResponseEntity<List<Notification>> getUserNotifications(Principal principal) {
+        return ResponseEntity.ok(notificationService.getUserNotifications(principal.getName()));
+    }
+
+    // Send notification to single role
     @PostMapping("/send")
-    public ResponseEntity<Notification> sendNotification(@RequestParam String recipient,
+    public ResponseEntity<Notification> sendNotification(@RequestParam String receiverRole,
                                                          @RequestParam String message,
-                                                         @RequestParam String type) {
-        Notification notification = notificationService.sendNotification(recipient, message, type);
+                                                         @RequestParam String type,
+                                                         @RequestParam(required = false) String status,
+                                                         Principal principal) {
+        String senderUsername = principal.getName();
+        Notification notification = notificationService.sendNotification(receiverRole, message, type, senderUsername, status);
         return ResponseEntity.ok(notification);
     }
+
+    // Send notification to multiple roles at once
+    @PostMapping("/send-multiple")
+    public ResponseEntity<List<Notification>> sendNotificationToMultipleRoles(@RequestParam List<String> receiverRoles,
+                                                                              @RequestParam String message,
+                                                                              @RequestParam String type,
+                                                                              @RequestParam(required = false) String status,
+                                                                              Principal principal) {
+        String senderUsername = principal.getName();
+        List<Notification> notifications = notificationService.sendNotificationToRoles(receiverRoles, message, type, senderUsername, status);
+        return ResponseEntity.ok(notifications);
+    }
+
+    // Update notification status by ID
+    @PutMapping("/{id}/status")
+    public ResponseEntity<Notification> updateNotificationStatus(@PathVariable Long id,
+                                                                 @RequestParam String status) {
+        Notification updated = notificationService.updateStatus(id, status);
+        return ResponseEntity.ok(updated);
+    }
+
+    // NotificationController.java
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteNotification(@PathVariable Long id) {
+        notificationService.deleteNotification(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/unread-count")
+    public ResponseEntity<Long> getUnreadCount(@RequestHeader("Role") String role) {
+        return ResponseEntity.ok(notificationService.countUnreadNotifications(role));
+    }
+
+    // Get only unread notifications by role
+    @GetMapping("/role/unread")
+    public ResponseEntity<List<Notification>> getUnreadRoleNotifications(@RequestHeader("Role") String role) {
+        return ResponseEntity.ok(notificationService.getUnreadRoleNotifications(role));
+    }
+
+
+    @PutMapping("/{id}/mark-read")
+    public ResponseEntity<Notification> markNotificationAsRead(@PathVariable Long id) {
+        Notification updated = notificationService.markAsRead(id);
+        return ResponseEntity.ok(updated);
+    }
+
+
+
+
 }
 

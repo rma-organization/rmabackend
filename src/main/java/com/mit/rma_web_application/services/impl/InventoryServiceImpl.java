@@ -50,7 +50,9 @@ public class InventoryServiceImpl implements InventoryService {
         notificationService.sendNotification(
                 "engineer",
                 "New inventory added: " + savedInventory.getName(),
-                "inventory"
+                "inventory",
+                "admin",
+                null
         );
 
         return InventoryMapper.mapToInventoryDto(savedInventory);

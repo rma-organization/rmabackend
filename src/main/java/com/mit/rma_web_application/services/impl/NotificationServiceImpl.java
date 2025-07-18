@@ -1,149 +1,3 @@
-//package com.mit.rma_web_application.services.impl;
-//
-//import com.mit.rma_web_application.models.Notification;
-//import com.mit.rma_web_application.repositories.NotificationRepository;
-//import com.mit.rma_web_application.services.interfaces.NotificationService;
-//import org.springframework.beans.factory.annotation.Autowired;
-//import org.springframework.messaging.simp.SimpMessagingTemplate;
-//import org.springframework.stereotype.Service;
-//
-//import java.util.List;
-//
-//@Service
-//public class NotificationServiceImpl implements NotificationService {
-//
-//    @Autowired
-//    private NotificationRepository notificationRepository;
-//
-//    @Autowired
-//    private SimpMessagingTemplate messagingTemplate;
-//
-//    @Override
-//    public void sendNotification(String recipientUsername, String message, String type) {
-//        Notification notification = new Notification();
-//        notification.setRecipientUsername(recipientUsername);
-//        notification.setMessage(message);
-//        notification.setType(type);
-//        notification.setRead(false);
-//        notificationRepository.save(notification);
-//
-//        messagingTemplate.convertAndSendToUser(
-//                recipientUsername,
-//                "/queue/notifications",
-//                notification
-//        );
-//    }
-//
-//    @Override
-//    public List<Notification> getUserNotifications(String username) {
-//        return notificationRepository.findByRecipientUsername(username);
-//    }
-//}
-//
-//
-//package com.mit.rma_web_application.services.impl;
-//
-//import com.mit.rma_web_application.models.Notification;
-//import com.mit.rma_web_application.repositories.NotificationRepository;
-//import com.mit.rma_web_application.services.interfaces.NotificationService;
-//import org.springframework.beans.factory.annotation.Autowired;
-//import org.springframework.messaging.simp.SimpMessagingTemplate;
-//import org.springframework.stereotype.Service;
-//
-//import java.util.List;
-//
-//@Service
-//public class NotificationServiceImpl implements NotificationService {
-//
-//    @Autowired
-//    private NotificationRepository notificationRepository;
-//
-//    @Autowired
-//    private SimpMessagingTemplate messagingTemplate;
-//
-//    @Override
-//    public void sendNotification(String recipientUsername, String message, String type) {
-//        Notification notification = new Notification();
-//        notification.setRecipientUsername(recipientUsername);
-//        notification.setMessage(message);
-//        notification.setType(type);
-//        notification.setRead(false);
-//
-//        // ✅ Save and flush to ensure ID is set
-//        Notification saved = notificationRepository.save(notification);
-//
-//        // 🧪 Optional: Log to verify ID is present
-//        System.out.println("📤 Sending notification to " + recipientUsername + ": ID=" + saved.getId());
-//
-//        // ✅ Send saved object with ID
-//        messagingTemplate.convertAndSendToUser(
-//                recipientUsername,
-//                "/queue/notifications",
-//                saved
-//        );
-//    }
-//
-//    @Override
-//    public List<Notification> getUserNotifications(String username) {
-//        return notificationRepository.findByRecipientUsername(username);
-//    }
-//}
-//package com.mit.rma_web_application.services;
-//
-//import com.mit.rma_web_application.models.Notification;
-//import com.mit.rma_web_application.repositories.NotificationRepository;
-//import com.mit.rma_web_application.services.interfaces.NotificationService;
-//import org.springframework.messaging.simp.SimpMessagingTemplate;
-//import org.springframework.stereotype.Service;
-//
-//import java.time.LocalDateTime;
-//import java.util.List;
-//
-//@Service
-//public class NotificationServiceImpl implements NotificationService {
-//
-//    private final NotificationRepository notificationRepository;
-//    private final SimpMessagingTemplate messagingTemplate;
-//    private final UserRepository userRepository;
-//
-//    public NotificationServiceImpl(
-//            NotificationRepository notificationRepository,
-//            SimpMessagingTemplate messagingTemplate,
-//            UserRepository userRepository
-//    ) {
-//        this.notificationRepository = notificationRepository;
-//        this.messagingTemplate = messagingTemplate;
-//        this.userRepository = userRepository;
-//    }
-//
-//    @Override
-//    public List<Notification> getUserNotifications(String username) {
-//        return notificationRepository.findByRecipientUsernameOrderByTimestampDesc(username);
-//    }
-//
-//    @Override
-//    public Notification sendNotification(String recipientUsername, String message, String type) {
-//        Notification notification = new Notification();
-//        notification.setRecipientUsername(recipientUsername);
-//        notification.setMessage(message);
-//        notification.setType(type);
-//        notification.setRead(false);
-//        notification.setTimestamp(LocalDateTime.now());
-//
-//        Notification saved = notificationRepository.save(notification);
-//        messagingTemplate.convertAndSendToUser(recipientUsername, "/queue/notifications", saved);
-//        return saved;
-//    }
-//
-//    @Override
-//    public void sendNotificationToRole(String roleName, String message, String type) {
-//        List<User> usersWithRole = userRepository.findUsersByRole(roleName);
-//        for (User user : usersWithRole) {
-//            sendNotification(user.getUsername(), message, type);
-//        }
-//    }
-//}
-//
 package com.mit.rma_web_application.services.impl;
 
 import com.mit.rma_web_application.models.Notification;
@@ -153,6 +7,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -169,29 +24,88 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     public List<Notification> getUserNotifications(String username) {
-        return notificationRepository.findByRecipientUsernameOrderByTimestampDesc(username);
+        return notificationRepository.findByReceiverRoleOrderByTimestampDesc(username);
     }
 
     @Override
-    public List<Notification> getRoleNotifications(String role) {
-        return notificationRepository.findByRecipientUsernameOrderByTimestampDesc(role);
+    public List<Notification> getRoleNotifications(String receiverRole) {
+        return notificationRepository.findByReceiverRoleOrderByTimestampDesc(receiverRole);
     }
 
     @Override
-    public Notification sendNotification(String recipientUsername, String message, String type) {
+    public Notification sendNotification(String receiverRole, String message, String type, String senderUsername, String status) {
         Notification notification = new Notification();
-        notification.setRecipientUsername(recipientUsername); // Can be role now
+        notification.setReceiverRole(receiverRole);
         notification.setMessage(message);
         notification.setType(type);
+        notification.setUserName(senderUsername);
         notification.setRead(false);
         notification.setTimestamp(LocalDateTime.now());
+        notification.setStatus(status);
 
         Notification saved = notificationRepository.save(notification);
-
-        // Role-based destination
-        messagingTemplate.convertAndSend("/topic/notifications/" + recipientUsername.toLowerCase(), saved);
+        messagingTemplate.convertAndSend("/topic/notifications/" + receiverRole.toLowerCase(), saved);
         return saved;
     }
+
+    @Override
+    public List<Notification> sendNotificationToRoles(List<String> receiverRoles, String message, String type, String senderUsername, String status) {
+        List<Notification> notifications = new ArrayList<>();
+
+        for (String role : receiverRoles) {
+            Notification notification = new Notification();
+            notification.setReceiverRole(role);
+            notification.setMessage(message);
+            notification.setType(type);
+            notification.setUserName(senderUsername);
+            notification.setRead(false);
+            notification.setTimestamp(LocalDateTime.now());
+            notification.setStatus(status);
+
+            Notification saved = notificationRepository.save(notification);
+            messagingTemplate.convertAndSend("/topic/notifications/" + role.toLowerCase(), saved);
+            notifications.add(saved);
+        }
+
+        return notifications;
+    }
+
+    @Override
+    public Notification updateStatus(Long id, String status) {
+        Notification notification = notificationRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Notification not found with id: " + id));
+
+        notification.setStatus(status);
+        Notification updated = notificationRepository.save(notification);
+
+        messagingTemplate.convertAndSend("/topic/notifications/" + notification.getReceiverRole().toLowerCase(), updated);
+        return updated;
+    }
+
+    @Override
+    public void deleteNotification(Long id) {
+        if (!notificationRepository.existsById(id)) {
+            throw new RuntimeException("Notification not found with id: " + id);
+        }
+        notificationRepository.deleteById(id);
+    }
+
+    @Override
+    public long countUnreadNotifications(String receiverRole) {
+        return notificationRepository.countByReceiverRoleAndReadIsFalse(receiverRole);
+    }
+
+    @Override
+    public List<Notification> getUnreadRoleNotifications(String receiverRole) {
+        return notificationRepository.findByReceiverRoleAndReadFalseOrderByTimestampDesc(receiverRole);
+    }
+
+    @Override
+    public Notification markAsRead(Long id) {
+        Notification notification = notificationRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Notification not found with ID: " + id));
+
+        notification.setRead(true);  // Correct setter here
+        return notificationRepository.save(notification);
+    }
 }
-
-

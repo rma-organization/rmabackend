@@ -1,22 +1,37 @@
+//
+//
+//package com.mit.rma_web_application.services;
+//
+//import com.mit.rma_web_application.dtos.RegisterRequestDTO;
+//import com.mit.rma_web_application.models.User;
+//
+//import java.util.List;
+//
+//public interface UserService {
+//    User registerUser(RegisterRequestDTO registrationDto);
+//    boolean existsByUsername(String username);
+//    User findByUsername(String username);
+//    List<User> getPendingUsers();
+//    User approveUser(Long userId);
+//    String generateToken(String username);
+//    User save(User user);
+//    List<User> getAllUsers();
+//}
+
 package com.mit.rma_web_application.services;
 
 import com.mit.rma_web_application.dtos.RegisterRequestDTO;
 import com.mit.rma_web_application.models.User;
-import com.mit.rma_web_application.services.interfaces.IUserService;
-import org.springframework.stereotype.Service;
 
-@Service
-public class UserService implements IUserService {
+import java.util.List;
 
-    private final IUserService userService;
-
-    // The facade delegates to the actual implementation
-    public UserService(IUserService userService) {
-        this.userService = userService;
-    }
-
-    @Override
-    public User registerUser(RegisterRequestDTO registerRequestDTO) {
-        return userService.registerUser(registerRequestDTO);
-    }
+public interface UserService {
+    User registerUser(RegisterRequestDTO registrationDto);
+    boolean existsByUsername(String username);
+    User findByUsername(String username);
+    List<User> getPendingUsers();
+    User approveUser(Long userId);
+    String generateToken(String username);
+    User save(User user);
+    List<User> getAllUsers();
 }

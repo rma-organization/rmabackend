@@ -19,9 +19,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmail(String email);
     List<User> findByApprovalStatus(ApprovalStatus approvalStatus);
 
-    Optional<User> findById(Long id);
+    @Query("SELECT u FROM User u WHERE u.deletedAt IS NULL")
+    List<User> findAllActiveUsers();
 
-    // ✅ Custom query to fetch users with roles
-    @Query("SELECT u FROM User u JOIN FETCH u.roles")
+    @Query("SELECT u FROM User u JOIN FETCH u.roles WHERE u.deletedAt IS NULL")
     List<User> findAllUsersWithRoles();
 }

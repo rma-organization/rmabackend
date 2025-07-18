@@ -1,109 +1,209 @@
+//
 //package com.mit.rma_web_application.services.impl;
 //
+//import com.mit.rma_web_application.config.JwtUtil;
 //import com.mit.rma_web_application.dtos.RegisterRequestDTO;
+//import com.mit.rma_web_application.models.ApprovalStatus;
 //import com.mit.rma_web_application.models.User;
 //import com.mit.rma_web_application.repositories.UserRepository;
-//import com.mit.rma_web_application.services.interfaces.IUserService;
-//import org.springframework.http.HttpStatus;
+//import com.mit.rma_web_application.services.UserService;
+//import jakarta.transaction.Transactional;
+//import lombok.RequiredArgsConstructor;
+//import org.springframework.security.core.GrantedAuthority;
+//import org.springframework.security.core.authority.SimpleGrantedAuthority;
+//import org.springframework.security.core.userdetails.UserDetails;
 //import org.springframework.security.crypto.password.PasswordEncoder;
 //import org.springframework.stereotype.Service;
-//import org.springframework.web.server.ResponseStatusException;
+//
+//import java.util.List;
+//import java.util.stream.Collectors;
 //
 //@Service
-//public class UserServiceImpl implements IUserService {
+//@RequiredArgsConstructor
+//@Transactional
+//public class UserServiceImpl implements UserService {
 //
 //    private final UserRepository userRepository;
 //    private final PasswordEncoder passwordEncoder;
+//    private final JwtUtil jwtUtil;
 //
-//    // Constructor-based dependency injection
-//    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder) {
-//        this.userRepository = userRepository;
-//        this.passwordEncoder = passwordEncoder;
-//    }
-//
-//    /**
-//     * Registers a new user with roles.
-//     */
 //    @Override
-//    public User registerUser(RegisterRequestDTO registerRequestDTO) {
-//        // Check if the username is already taken
-//        if (userRepository.existsByUsername(registerRequestDTO.getUsername())) {
-//            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Username is already taken.");
-//        }
-//
-//        // Check if the email is already taken
-//        if (userRepository.existsByEmail(registerRequestDTO.getEmail())) {
-//            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email is already in use.");
-//        }
-//
-//        // Encode the password securely
-//        String encodedPassword = passwordEncoder.encode(registerRequestDTO.getPassword());
-//
-//        // Create and save the new user
+//    public User registerUser(RegisterRequestDTO registrationDto) {
 //        User user = new User();
-//        user.setUsername(registerRequestDTO.getUsername());
-//        user.setEmail(registerRequestDTO.getEmail());
-//        user.setPassword(encodedPassword);
-//        user.setRoles(registerRequestDTO.getRoles());
-//
+//        user.setUsername(registrationDto.getUsername());
+//        user.setEmail(registrationDto.getEmail());
+//        user.setPassword(passwordEncoder.encode(registrationDto.getPassword()));
+//        user.setRoles(registrationDto.getRoles());
+//        user.setApprovalStatus(ApprovalStatus.PENDING);
 //        return userRepository.save(user);
 //    }
+//
+//    @Override
+//    public boolean existsByUsername(String username) {
+//        return userRepository.existsByUsername(username);
+//    }
+//
+//    @Override
+//    public User findByUsername(String username) {
+//        return userRepository.findByUsername(username).orElse(null);
+//    }
+//
+//    @Override
+//    public List<User> getPendingUsers() {
+//        return userRepository.findByApprovalStatus(ApprovalStatus.PENDING);
+//    }
+//
+//    @Override
+//    public User approveUser(Long userId) {
+//        User user = userRepository.findById(userId)
+//                .orElseThrow(() -> new RuntimeException("User not found"));
+//        user.setApprovalStatus(ApprovalStatus.APPROVED);
+//        return userRepository.save(user);
+//    }
+//
+//    @Override
+//    public String generateToken(String username) {
+//        UserDetails userDetails = loadUserDetailsByUsername(username);
+//        return jwtUtil.generateToken(userDetails);
+//    }
+//
+//    @Override
+//    public User save(User user) {
+//        return userRepository.save(user);
+//    }
+//
+//    @Override
+//    public List<User> getAllUsers() {
+//        return userRepository.findAllUsersWithRoles();
+//    }
+//
+//    // ✅ Helper method to build Spring Security UserDetails from custom User entity
+//    private UserDetails loadUserDetailsByUsername(String username) {
+//        User user = userRepository.findByUsername(username)
+//                .orElseThrow(() -> new RuntimeException("User not found"));
+//
+//        List<GrantedAuthority> authorities = user.getRoles().stream()
+//                .map(role -> {
+//                    String roleName = role.name(); // Get enum name
+//                    if (!roleName.startsWith("ROLE_")) {
+//                        roleName = "ROLE_" + roleName;
+//                    }
+//                    return new SimpleGrantedAuthority(roleName);
+//                })
+//                .collect(Collectors.toList());
+//
+//        return org.springframework.security.core.userdetails.User
+//                .withUsername(user.getUsername())
+//                .password(user.getPassword())
+//                .authorities(authorities)
+//                .accountExpired(false)
+//                .accountLocked(false)
+//                .credentialsExpired(false)
+//                .disabled(false)
+//                .build();
+//    }
 //}
-
 package com.mit.rma_web_application.services.impl;
 
+import com.mit.rma_web_application.config.JwtUtil;
 import com.mit.rma_web_application.dtos.RegisterRequestDTO;
-import com.mit.rma_web_application.models.User;
 import com.mit.rma_web_application.models.ApprovalStatus;
+import com.mit.rma_web_application.models.User;
 import com.mit.rma_web_application.repositories.UserRepository;
-import com.mit.rma_web_application.services.interfaces.IUserService;
-import com.mit.rma_web_application.services.interfaces.NotificationService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
+import com.mit.rma_web_application.services.UserService;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
-public class UserServiceImpl implements IUserService {
+@RequiredArgsConstructor
+@Transactional
+public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final NotificationService notificationService;
+    private final JwtUtil jwtUtil;
 
-    @Autowired
-    public UserServiceImpl(UserRepository userRepository,
-                           PasswordEncoder passwordEncoder,
-                           NotificationService notificationService) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.notificationService = notificationService;
+    @Override
+    public User registerUser(RegisterRequestDTO registrationDto) {
+        User user = new User();
+        user.setUsername(registrationDto.getUsername());
+        user.setEmail(registrationDto.getEmail());
+        user.setPassword(passwordEncoder.encode(registrationDto.getPassword()));
+        user.setRoles(registrationDto.getRoles());
+        user.setApprovalStatus(ApprovalStatus.PENDING);
+        return userRepository.save(user);
     }
 
     @Override
-    public User registerUser(RegisterRequestDTO registerRequestDTO) {
-        if (userRepository.existsByUsername(registerRequestDTO.getUsername())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Username is already taken.");
-        }
+    public boolean existsByUsername(String username) {
+        return userRepository.existsByUsername(username);
+    }
 
-        if (userRepository.existsByEmail(registerRequestDTO.getEmail())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email is already in use.");
-        }
+    @Override
+    public User findByUsername(String username) {
+        return userRepository.findByUsername(username).orElse(null);
+    }
 
-        String encodedPassword = passwordEncoder.encode(registerRequestDTO.getPassword());
+    @Override
+    public List<User> getPendingUsers() {
+        return userRepository.findByApprovalStatus(ApprovalStatus.PENDING);
+    }
 
-        User user = new User();
-        user.setUsername(registerRequestDTO.getUsername());
-        user.setEmail(registerRequestDTO.getEmail());
-        user.setPassword(encodedPassword);
-        user.setRoles(registerRequestDTO.getRoles());
-        user.setApprovalStatus(ApprovalStatus.PENDING); // Default to PENDING
+    @Override
+    public User approveUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        user.setApprovalStatus(ApprovalStatus.APPROVED);
+        return userRepository.save(user);
+    }
 
-        User savedUser = userRepository.save(user);
+    @Override
+    public String generateToken(String username) {
+        UserDetails userDetails = loadUserDetailsByUsername(username);
+        return jwtUtil.generateToken(userDetails);
+    }
 
-        // Send notification to admin (adjust username or role as needed)
-        notificationService.sendNotification("admin", "New user registration pending approval: " + user.getUsername(), "registration");
+    @Override
+    public User save(User user) {
+        return userRepository.save(user);
+    }
 
-        return savedUser;
+    @Override
+    public List<User> getAllUsers() {
+        return userRepository.findAllUsersWithRoles();
+    }
+
+    // Helper method to create UserDetails from User entity
+    private UserDetails loadUserDetailsByUsername(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        List<GrantedAuthority> authorities = user.getRoles().stream()
+                .map(role -> {
+                    String roleName = role.name();
+                    if (!roleName.startsWith("ROLE_")) {
+                        roleName = "ROLE_" + roleName;
+                    }
+                    return new SimpleGrantedAuthority(roleName);
+                })
+                .collect(Collectors.toList());
+
+        return org.springframework.security.core.userdetails.User
+                .withUsername(user.getUsername())
+                .password(user.getPassword())
+                .authorities(authorities)
+                .accountExpired(false)
+                .accountLocked(false)
+                .credentialsExpired(false)
+                .disabled(false)
+                .build();
     }
 }

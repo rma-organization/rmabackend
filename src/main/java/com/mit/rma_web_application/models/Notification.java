@@ -1,110 +1,14 @@
-//package com.mit.rma_web_application.models;
-//
-//import jakarta.persistence.*;
-//
-//@Entity
-//public class Notification {
-//
-//    @Id
-//    @GeneratedValue(strategy = GenerationType.IDENTITY)
-//    private Long id;
-//
-//    private String recipientUsername;
-//    private String message;
-//    private String type;
-//    private boolean isRead;
-//
-//    // Getters and setters
-//
-//    public Long getId() {
-//        return id;
-//    }
-//
-//    public String getRecipientUsername() {
-//        return recipientUsername;
-//    }
-//
-//    public void setRecipientUsername(String recipientUsername) {
-//        this.recipientUsername = recipientUsername;
-//    }
-//
-//    public String getMessage() {
-//        return message;
-//    }
-//
-//    public void setMessage(String message) {
-//        this.message = message;
-//    }
-//
-//    public String getType() {
-//        return type;
-//    }
-//
-//    public void setType(String type) {
-//        this.type = type;
-//    }
-//
-//    public boolean isRead() {
-//        return isRead;
-//    }
-//
-//    public void setRead(boolean read) {
-//        isRead = read;
-//    }
-//}
-//package com.mit.rma_web_application.models;
-//
-//import jakarta.persistence.*;
-//import java.time.LocalDateTime;
-//
-//@Entity
-//public class Notification {
-//
-//    @Id
-//    @GeneratedValue(strategy = GenerationType.IDENTITY)
-//    private Long id;
-//
-//    private String recipientUsername;
-//    private String message;
-//    private String type;
-//    private boolean isRead;
-//
-//    private LocalDateTime timestamp;
-//
-//    // Getters and setters
-//    public Long getId() { return id; }
-//
-//    public String getRecipientUsername() { return recipientUsername; }
-//
-//    public void setRecipientUsername(String recipientUsername) {
-//        this.recipientUsername = recipientUsername;
-//    }
-//
-//    public String getMessage() { return message; }
-//
-//    public void setMessage(String message) { this.message = message; }
-//
-//    public String getType() { return type; }
-//
-//    public void setType(String type) { this.type = type; }
-//
-//    public boolean isRead() { return isRead; }
-//
-//    public void setRead(boolean read) { isRead = read; }
-//
-//    public LocalDateTime getTimestamp() { return timestamp; }
-//
-//    public void setTimestamp(LocalDateTime timestamp) {
-//        this.timestamp = timestamp;
-//    }
-//}
-
 package com.mit.rma_web_application.models;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+
 import java.time.LocalDateTime;
 
 @Entity
+@Getter
+@Setter
 @Table(name = "notifications")
 public class Notification {
 
@@ -112,59 +16,26 @@ public class Notification {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String recipientUsername;
+    @Column(name = "receiver_role")
+    private String receiverRole;
+
     private String message;
+
     private String type;
-    private boolean isRead;
+
+    @Column(name = "is_read")
+    private boolean read;
+
     private LocalDateTime timestamp;
 
+    @Column(name = "user_name")
+    private String userName;
+
+    @Column(name = "status")
+    private String status;
+
     public Notification() {
-        this.isRead = false;
+        this.read = false;
         this.timestamp = LocalDateTime.now();
-    }
-
-    // Getters and setters
-    public Long getId() {
-        return id;
-    }
-
-    public String getRecipientUsername() {
-        return recipientUsername;
-    }
-
-    public void setRecipientUsername(String recipientUsername) {
-        this.recipientUsername = recipientUsername;
-    }
-
-    public String getMessage() {
-        return message;
-    }
-
-    public void setMessage(String message) {
-        this.message = message;
-    }
-
-    public String getType() {
-        return type;
-    }
-
-    public void setType(String type) {
-        this.type = type;
-    }
-
-    public boolean isRead() {
-        return isRead;
-    }
-
-    public void setRead(boolean read) {
-        isRead = read;
-    }
-
-    public LocalDateTime getTimestamp() {
-        return timestamp;
-    }
-
-    public void setTimestamp(LocalDateTime timestamp) {
-        this.timestamp = timestamp;
     }
 }

@@ -33,6 +33,7 @@ public class User {
 
     private LocalDateTime approvedAt;
 
+    // Use this for soft-delete checking
     private LocalDateTime deletedAt;
 
     @ElementCollection(fetch = FetchType.EAGER)
@@ -44,5 +45,10 @@ public class User {
     @PreRemove
     public void onRemove() {
         this.deletedAt = LocalDateTime.now();
+    }
+
+    // Optional helper method
+    public boolean isDeleted() {
+        return deletedAt != null;
     }
 }
