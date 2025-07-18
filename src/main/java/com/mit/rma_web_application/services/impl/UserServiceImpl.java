@@ -9,6 +9,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.List;
+import java.util.Map;
+
 @Service
 public class UserServiceImpl implements IUserService {
 
@@ -47,5 +50,33 @@ public class UserServiceImpl implements IUserService {
         user.setRoles(registerRequestDTO.getRoles());
 
         return userRepository.save(user);
+    }
+
+    public Map<String, Object> getUserStatistics() {
+        Map<String, Object> stats = new java.util.HashMap<>();
+        stats.put("totalUsers", userRepository.countAllUsers());
+
+        // Users by role
+        List<Object[]> usersByRole = userRepository.countUsersByRole();
+        java.util.Map<String, Long> roleCounts = new java.util.HashMap<>();
+        for (Object[] row : usersByRole) {
+            // row[0] is a Set<Role>, row[1] is count
+            @SuppressWarnings("unchecked")
+            java.util.Set<com.mit.rma_web_application.models.Role> roles = (java.util.Set<com.mit.rma_web_application.models.Role>) row[0];
+            Long count = (Long) row[1];
+            for (com.mit.rma_web_application.models.Role role : roles) {
+                roleCounts.put(role.name(), roleCounts.getOrDefault(role.name(), 0L) + count);
+            }
+        }
+        stats.put("usersByRole", roleCounts);
+
+        // Pending approvals
+        stats.put("pendingApprovals", userRepository.countPendingApprovals());
+
+        // Recently registered users (last 7 days)
+        java.time.LocalDateTime sevenDaysAgo = java.time.LocalDateTime.now().minusDays(7);
+        stats.put("recentUsers", userRepository.findRecentUsers(sevenDaysAgo));
+
+        return stats;
     }
 }

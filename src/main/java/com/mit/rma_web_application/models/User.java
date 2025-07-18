@@ -32,7 +32,6 @@ public class User {
     private LocalDateTime createdAt;
 
     private LocalDateTime approvedAt;
-
     private LocalDateTime deletedAt;
 
     @ElementCollection(fetch = FetchType.EAGER)
@@ -40,6 +39,10 @@ public class User {
     @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))
     @Column(name = "role")
     private Set<Role> roles;
+
+    // Fields for password reset functionality
+    private String resetToken;
+    private LocalDateTime resetTokenExpiry;
 
     @PreRemove
     public void onRemove() {

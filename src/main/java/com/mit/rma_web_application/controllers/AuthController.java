@@ -1,4 +1,3 @@
-
 package com.mit.rma_web_application.controllers;
 
 import com.mit.rma_web_application.config.JwtUtil;
@@ -6,17 +5,19 @@ import com.mit.rma_web_application.dtos.*;
 import com.mit.rma_web_application.models.*;
 import com.mit.rma_web_application.repositories.UserRepository;
 import com.mit.rma_web_application.services.CustomUserDetailsService;
+import com.mit.rma_web_application.services.EmailService;
 import com.mit.rma_web_application.services.interfaces.IUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
-import java.time.LocalDateTime;
 
-import java.util.List;
-import java.util.Optional;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 @CrossOrigin(origins = "http://localhost:5173")
@@ -38,9 +39,12 @@ public class AuthController {
     @Autowired
     private CustomUserDetailsService userDetailsService;
 
-    /**
-     * Endpoint for user registration.
-     */
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private EmailService emailService;
+
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody RegisterRequestDTO registerRequest) {
         if (userRepository.existsByUsername(registerRequest.getUsername())) {
@@ -57,9 +61,6 @@ public class AuthController {
         }
     }
 
-    /**
-     * Endpoint for user login with role validation and admin approval check.
-     */
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody AuthRequest authRequest) {
         Optional<User> userOptional = userRepository.findByUsername(authRequest.getUsername());
@@ -87,28 +88,47 @@ public class AuthController {
         }
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(authRequest.getUsername());
-        String token = jwtUtil.generateToken(userDetails.getUsername());
+        String token = jwtUtil.generateToken(userDetails.getUsername(), authRequest.getRole().name());
         return ResponseEntity.ok(new AuthResponse(token, authRequest.getRole()));
     }
+
     @GetMapping("/users")
     public ResponseEntity<List<User>> getAllUsers() {
-        List<User> allUsers = userRepository.findAll();  // Fetch all users, regardless of their approval status.
+        List<User> allUsers = userRepository.findAll();
         return ResponseEntity.ok(allUsers);
     }
 
-    /**
-     * Endpoint to get all users with pending approval.
-     */
+    @PutMapping("/update-user")
+    public ResponseEntity<?> updateUser(@RequestBody UpdateUserDTO dto) {
+        Optional<User> userOptional = userRepository.findById(dto.getId());
+
+        if (userOptional.isEmpty()) {
+            return ResponseEntity.badRequest().body("User not found");
+        }
+
+        User user = userOptional.get();
+
+        try {
+            Set<Role> roleSet = dto.getRoles().stream()
+                    .map(roleStr -> Role.valueOf(roleStr.toUpperCase()))
+                    .collect(Collectors.toSet());
+
+            user.setRoles(roleSet);
+            user.setApprovalStatus(dto.getApprovalStatus());
+
+            userRepository.save(user);
+            return ResponseEntity.ok("User updated successfully");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body("Invalid role provided: " + e.getMessage());
+        }
+    }
+
     @GetMapping("/pending-users")
     public ResponseEntity<List<User>> getPendingUsers() {
         List<User> pendingUsers = userRepository.findByApprovalStatus(ApprovalStatus.PENDING);
         return ResponseEntity.ok(pendingUsers);
     }
 
-    /**
-     * Endpoint for approving a user.
-     * Only an admin should be allowed to approve a user.
-     */
     @PostMapping("/approve")
     public ResponseEntity<?> approveUser(@RequestBody ApprovelStatusDTO approvelStatusDTO) {
         Optional<User> userOptional = userRepository.findByUsername(approvelStatusDTO.getUsername());
@@ -122,22 +142,71 @@ public class AuthController {
         }
 
         user.setApprovalStatus(approvelStatusDTO.getApprovalStatus());
-
-        // Set the approvedAt field to the current time when approval status is updated to "APPROVED"
         if (ApprovalStatus.APPROVED.equals(approvelStatusDTO.getApprovalStatus())) {
-            user.setApprovedAt(LocalDateTime.now()); // Set the current time
+            user.setApprovedAt(LocalDateTime.now());
         }
 
         userRepository.save(user);
         return ResponseEntity.ok("User approval status updated successfully.");
     }
 
-    /**
-     * Endpoint to validate a JWT token.
-     */
     @GetMapping("/validate")
     public ResponseEntity<?> validateToken(@RequestParam String token, @RequestParam String username) {
         boolean isValid = jwtUtil.validateToken(token, username);
         return isValid ? ResponseEntity.ok("Valid Token") : ResponseEntity.status(401).body("Invalid Token");
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody ForgotPasswordRequest request) {
+        Optional<User> userOpt = userRepository.findByUsername(request.getUsername());
+
+        if (userOpt.isEmpty() || !userOpt.get().getEmail().equalsIgnoreCase(request.getEmail())) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Invalid username or email."));
+        }
+
+        User user = userOpt.get();
+        String token = UUID.randomUUID().toString();
+        user.setResetToken(token);
+        user.setResetTokenExpiry(LocalDateTime.now().plusMinutes(30));
+        userRepository.save(user);
+
+        String resetLink = "http://localhost:5173/reset-password?token=" + token;
+        String subject = "RMA Web Application - Password Reset Request";
+        String text = "Dear " + user.getUsername() + ",\n\n" +
+                "We received a request to reset your password. Please use the following link to reset your password. This link will expire in 30 minutes.\n\n" +
+                resetLink + "\n\nIf you did not request a password reset, please ignore this email.";
+        try {
+            emailService.sendSimpleMessage(user.getEmail(), subject, text);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", "Failed to send email: " + e.getMessage()));
+        }
+
+        return ResponseEntity.ok(Map.of("message", "Password reset link sent to your email."));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest request) {
+        Optional<User> userOpt = userRepository.findByResetToken(request.getToken());
+
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Invalid or expired token."));
+        }
+
+        User user = userOpt.get();
+        if (user.getResetTokenExpiry() == null || user.getResetTokenExpiry().isBefore(LocalDateTime.now())) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Token has expired."));
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        user.setResetToken(null);
+        user.setResetTokenExpiry(null);
+        userRepository.save(user);
+
+        return ResponseEntity.ok(Map.of("message", "Password has been reset successfully."));
+    }
+
+    @GetMapping("/admin/user-stats")
+    public ResponseEntity<?> getUserStats() {
+        return ResponseEntity.ok(userService.getUserStatistics());
     }
 }
