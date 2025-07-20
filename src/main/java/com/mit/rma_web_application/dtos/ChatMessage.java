@@ -1,4 +1,5 @@
 
+
 package com.mit.rma_web_application.dtos;
 
 import com.mit.rma_web_application.models.MessageType;
@@ -16,6 +17,6 @@ public class ChatMessage {
     private String sender;
     private String receiver;
     private MessageType type;
-    private LocalDateTime timestamp; // Add this field
-
+    private LocalDateTime timestamp;
+    private long unreadCount; // Added this field
 }

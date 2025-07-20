@@ -1,3 +1,5 @@
+
+// ChatService.java
 package com.mit.rma_web_application.services;
 
 import com.mit.rma_web_application.dtos.ChatMessage;
@@ -13,16 +15,16 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class ChatService {
-
     private final ChatMessageRepository chatMessageRepository;
 
     public ChatMessage saveMessage(ChatMessage chatMessage) {
         ChatMessageEntity entity = ChatMessageEntity.builder()
                 .sender(chatMessage.getSender())
-                .receiver(chatMessage.getReceiver()) // Make sure to set the receiver field
+                .receiver(chatMessage.getReceiver())
                 .content(chatMessage.getContent())
                 .type(chatMessage.getType())
                 .timestamp(LocalDateTime.now())
+                .isRead(false) // New messages are unread by default
                 .build();
 
         chatMessageRepository.save(entity);
@@ -33,14 +35,16 @@ public class ChatService {
         return chatMessageRepository.findAll();
     }
 
-    /**
-     * Gets all messages exchanged between two users in both directions
-     * @param sender the first user
-     * @param receiver the second user
-     * @return List of messages exchanged between the users
-     */
     public List<ChatMessageEntity> getMessagesBetweenUsers(String sender, String receiver) {
-        // Find messages where user1 is sender and user2 is receiver OR user2 is sender and user1 is receiver
         return chatMessageRepository.findMessagesBetweenUsers(sender, receiver);
     }
+
+    public long getUnreadCount(String sender, String receiver) {
+        return chatMessageRepository.countUnreadMessages(sender, receiver);
+    }
+
+    public void markMessagesAsRead(String sender, String receiver) {
+        chatMessageRepository.markMessagesAsRead(sender, receiver);
+    }
+
 }
