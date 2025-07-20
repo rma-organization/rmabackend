@@ -49,11 +49,6 @@ public class UserServiceImpl implements IUserService {
         return userRepository.save(user);
     }
 
-
-    public Map<String, Object> getUserStatistics() {
-        Map<String, Object> stats = new java.util.HashMap<>();
-        stats.put("totalUsers", userRepository.countAllUsers());
-
     /**
      * Returns a general stats map, useful for flexible UI displays.
      */
@@ -113,4 +108,3 @@ public class UserServiceImpl implements IUserService {
         return response;
     }
 }
-
