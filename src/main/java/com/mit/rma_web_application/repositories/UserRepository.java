@@ -19,15 +19,32 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByUsername(String username);
     Optional<User> findByEmail(String email);
     Optional<User> findById(Long id);
+
+    Optional<User> findByResetToken(String resetToken); // for password reset
+
     List<User> findByApprovalStatus(ApprovalStatus approvalStatus);
 
+    // Fetch all users with roles eagerly loaded
     @Query("SELECT u FROM User u JOIN FETCH u.roles")
     List<User> findAllUsersWithRoles();
 
-    // Count by approval status
-    long countByApprovalStatus(ApprovalStatus status);
+    // Count total users
+    @Query("SELECT COUNT(u) FROM User u")
+    long countAllUsers();
 
-    // Approved users between a date range
+    // Count users grouped by roles - returns list of Object[] {roles, count}
+    @Query("SELECT u.roles, COUNT(u) FROM User u GROUP BY u.roles")
+    List<Object[]> countUsersByRole();
+
+    // Count pending approvals
+    @Query("SELECT COUNT(u) FROM User u WHERE u.approvalStatus = com.mit.rma_web_application.models.ApprovalStatus.PENDING")
+    long countPendingApprovals();
+
+    // Count approved users between given dates
     @Query("SELECT COUNT(u) FROM User u WHERE u.approvalStatus = com.mit.rma_web_application.models.ApprovalStatus.APPROVED AND u.approvedAt BETWEEN :start AND :end")
     long countApprovedBetween(LocalDateTime start, LocalDateTime end);
+
+    // Find recent users created since a date
+    @Query("SELECT u FROM User u WHERE u.createdAt >= :since")
+    List<User> findRecentUsers(LocalDateTime since);
 }

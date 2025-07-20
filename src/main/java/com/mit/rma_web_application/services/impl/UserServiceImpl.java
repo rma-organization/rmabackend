@@ -13,6 +13,9 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.time.YearMonth;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Service
 public class UserServiceImpl implements IUserService {
@@ -46,7 +49,39 @@ public class UserServiceImpl implements IUserService {
         return userRepository.save(user);
     }
 
-    // ✅ Add dashboard method here
+    /**
+     * Returns a general stats map, useful for flexible UI displays.
+     */
+    public Map<String, Object> getUserStatistics() {
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("totalUsers", userRepository.countAllUsers());
+
+        // Users by role
+        List<Object[]> usersByRole = userRepository.countUsersByRole();
+        Map<String, Long> roleCounts = new HashMap<>();
+        for (Object[] row : usersByRole) {
+            @SuppressWarnings("unchecked")
+            var roles = (java.util.Set<com.mit.rma_web_application.models.Role>) row[0];
+            Long count = (Long) row[1];
+            for (var role : roles) {
+                roleCounts.put(role.name(), roleCounts.getOrDefault(role.name(), 0L) + count);
+            }
+        }
+        stats.put("usersByRole", roleCounts);
+
+        // Pending approvals
+        stats.put("pendingApprovals", userRepository.countPendingApprovals());
+
+        // Recently registered users (last 7 days)
+        LocalDateTime sevenDaysAgo = LocalDateTime.now().minusDays(7);
+        stats.put("recentUsers", userRepository.findRecentUsers(sevenDaysAgo));
+
+        return stats;
+    }
+
+    /**
+     * Returns structured dashboard data including user status counts and monthly headcounts.
+     */
     public DashboardResponse getDashboardData() {
         DashboardResponse.UserStatusCounts counts = new DashboardResponse.UserStatusCounts();
         counts.setApproved(userRepository.countByApprovalStatus(ApprovalStatus.APPROVED));
@@ -71,6 +106,5 @@ public class UserServiceImpl implements IUserService {
         response.setMonthlyHeadcount(headcount);
 
         return response;
-
     }
 }
