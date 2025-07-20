@@ -3,6 +3,7 @@ package com.mit.rma_web_application.services.impl;
 import com.mit.rma_web_application.dtos.DashboardResponse;
 import com.mit.rma_web_application.dtos.RegisterRequestDTO;
 import com.mit.rma_web_application.models.ApprovalStatus;
+import com.mit.rma_web_application.models.Role;
 import com.mit.rma_web_application.models.User;
 import com.mit.rma_web_application.repositories.UserRepository;
 import com.mit.rma_web_application.services.interfaces.IUserService;
@@ -13,9 +14,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.time.YearMonth;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class UserServiceImpl implements IUserService {
@@ -49,9 +48,7 @@ public class UserServiceImpl implements IUserService {
         return userRepository.save(user);
     }
 
-    /**
-     * Returns a general stats map, useful for flexible UI displays.
-     */
+    @Override
     public Map<String, Object> getUserStatistics() {
         Map<String, Object> stats = new HashMap<>();
         stats.put("totalUsers", userRepository.countAllUsers());
@@ -61,9 +58,9 @@ public class UserServiceImpl implements IUserService {
         Map<String, Long> roleCounts = new HashMap<>();
         for (Object[] row : usersByRole) {
             @SuppressWarnings("unchecked")
-            var roles = (java.util.Set<com.mit.rma_web_application.models.Role>) row[0];
+            Set<Role> roles = (Set<Role>) row[0];
             Long count = (Long) row[1];
-            for (var role : roles) {
+            for (Role role : roles) {
                 roleCounts.put(role.name(), roleCounts.getOrDefault(role.name(), 0L) + count);
             }
         }
@@ -79,9 +76,7 @@ public class UserServiceImpl implements IUserService {
         return stats;
     }
 
-    /**
-     * Returns structured dashboard data including user status counts and monthly headcounts.
-     */
+    @Override
     public DashboardResponse getDashboardData() {
         DashboardResponse.UserStatusCounts counts = new DashboardResponse.UserStatusCounts();
         counts.setApproved(userRepository.countByApprovalStatus(ApprovalStatus.APPROVED));

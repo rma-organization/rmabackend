@@ -23,7 +23,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     List<User> findByApprovalStatus(ApprovalStatus approvalStatus);
 
-    long countByApprovalStatus(ApprovalStatus status); // ✅ Add this line
+    long countByApprovalStatus(ApprovalStatus status); // ✅ Required
 
     @Query("SELECT u FROM User u JOIN FETCH u.roles")
     List<User> findAllUsersWithRoles();
