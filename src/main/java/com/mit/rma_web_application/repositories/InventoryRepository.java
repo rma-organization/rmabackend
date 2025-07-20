@@ -1,6 +1,5 @@
 package com.mit.rma_web_application.repositories;
 
-
 import com.mit.rma_web_application.models.Inventory;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -27,4 +26,9 @@ public interface InventoryRepository extends JpaRepository<Inventory, Long> {
     // Fetch inventory items by name (non-deleted)
     @Query("SELECT i FROM Inventory i WHERE i.deletedAt IS NULL AND i.name LIKE CONCAT('%', :name, '%')")
     Optional<List<Inventory>> findByNameContainingAndDeletedAtIsNull(@Param("name") String name);
+
+    // Search by part number (non-deleted)
+    @Query("SELECT i FROM Inventory i WHERE i.deletedAt IS NULL AND " +
+            "(LOWER(i.inBoxPartNumber) LIKE LOWER(CONCAT('%', :query, '%')))")
+    List<Inventory> searchByPartNumber(@Param("query") String query);
 }

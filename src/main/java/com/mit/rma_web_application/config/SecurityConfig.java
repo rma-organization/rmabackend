@@ -32,29 +32,25 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+                // Enable CORS and configure it
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .csrf(csrf -> csrf.disable())
+                .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-
-                        // Public authentication endpoints
+                        // Public Endpoints
                         .requestMatchers(
                                 "/api/auth/login",
                                 "/api/auth/register",
                                 "/api/auth/users",
                                 "/api/auth/pending-users",
-                                "/api/auth/approve",
-                                "/api/auth/forgot-password",
-                                "/api/auth/reset-password"
+                                "/api/auth/approve"
                         ).permitAll()
-
-                        // Public resource endpoints (with /** for sub-paths)
                         .requestMatchers("/api/vendors/**").permitAll()
+                        .requestMatchers("/api/requests/**").permitAll()
                         .requestMatchers("/api/customers/**").permitAll()
                         .requestMatchers("/api/inventory/**").permitAll()
                         .requestMatchers("/ws/**").permitAll()
 
-                        // Admin-only endpoints
-                        .requestMatchers("/api/auth/admin/**").hasRole("ADMIN")
+                        // Role-secured Endpoints
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
                         // Role-based access
@@ -63,13 +59,12 @@ public class SecurityConfig {
                         .requestMatchers("/api/supplychain/**").hasRole("SUPPLYCHAIN")
                         .requestMatchers("/api/rma/**").hasRole("RMA")
 
-                        // Authenticated-only
-                        .requestMatchers("/api/notifications/**").authenticated()
-
-                        // All other requests require authentication
+                        // Catch-all: All others require authentication
                         .anyRequest().authenticated()
                 )
+                // Set session to stateless (no HTTP session)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // Add the JWT filter before Spring Security's authentication filter
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -79,9 +74,9 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(List.of(
-                "http://localhost:5173",
-                "http://localhost:3000",
-                "http://localhost:5174"
+                "http://localhost:5173",   // Vite React dev server
+                "http://localhost:3000",   // Create React App dev server
+                "http://localhost:5174"    // Another possible frontend port
         ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
@@ -97,11 +92,13 @@ public class SecurityConfig {
         return new CorsFilter(corsConfigurationSource());
     }
 
+    // Expose AuthenticationManager bean for use in other parts (e.g. login controller)
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
 
+    // Password encoder bean for hashing passwords
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();

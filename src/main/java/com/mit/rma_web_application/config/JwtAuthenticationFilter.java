@@ -33,18 +33,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
         String path = request.getRequestURI();
-        return path.startsWith("/api/auth/login")
-                || path.startsWith("/api/auth/register")
-                || path.startsWith("/api/auth/forgot-password")
-                || path.startsWith("/api/auth/reset-password");
+        // Allow login & signup without JWT authentication
+        return path.startsWith("/api/auth/login") || path.startsWith("/api/auth/register");
     }
 
     @Override
-    protected void doFilterInternal(
-            @NonNull HttpServletRequest request,
-            @NonNull HttpServletResponse response,
-            @NonNull FilterChain filterChain
-    ) throws ServletException, IOException {
+    protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain chain)
+            throws ServletException, IOException {
 
         String authHeader = request.getHeader("Authorization");
 
