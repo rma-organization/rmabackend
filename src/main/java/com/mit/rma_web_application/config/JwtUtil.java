@@ -25,7 +25,7 @@ public class JwtUtil {
         return Keys.hmacShaKeyFor(secretKey.getBytes());
     }
 
-    // Generate token with username and role
+    // Generate JWT token with username and role claims
     public String generateToken(String username, String role) {
         return Jwts.builder()
                 .setSubject(username)
@@ -36,33 +36,23 @@ public class JwtUtil {
                 .compact();
     }
 
-    // Generate token with just username (optional overload)
-    public String generateToken(String username) {
-        return Jwts.builder()
-                .setSubject(username)
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + expiration))
-                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
-                .compact();
-    }
-
-    // Extract username from token
+    // Extract username (subject) from token
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
     }
 
-    // Extract role from token
+    // Extract role claim from token
     public String extractRole(String token) {
         return extractClaim(token, claims -> claims.get("role", String.class));
     }
 
-    // Generic claim extractor
+    // Generic method to extract any claim
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = extractAllClaims(token);
         return claimsResolver.apply(claims);
     }
 
-    // Extract all claims
+    // Extract all claims from token
     private Claims extractAllClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(getSigningKey())
