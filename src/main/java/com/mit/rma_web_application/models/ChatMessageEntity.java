@@ -1,4 +1,4 @@
-// package: com.mit.rma_web_application.models
+
 
 package com.mit.rma_web_application.models;
 
@@ -13,18 +13,19 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class ChatMessageEntity {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
     private String content;
     private String sender;
-
-    private String receiver; // ✅ New field
-
+    private String receiver;
     @Enumerated(EnumType.STRING)
     private MessageType type;
-
     private LocalDateTime timestamp;
+    private boolean isRead; // New field to track read status
 }
+
+
+
+
+

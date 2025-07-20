@@ -1,6 +1,5 @@
 package com.mit.rma_web_application.models;
 
-
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
@@ -69,7 +68,15 @@ public class Inventory {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
-    // Automatically set created and updated timestamps
+    @Column(name = "currency")
+    private String currency;
+
+    @Column(name = "amount")
+    private Double amount;
+
+    @Column(name = "airway_bill_number")
+    private String airwayBillNumber;
+
     @PrePersist
     public void prePersist() {
         this.createdAt = LocalDateTime.now();
@@ -81,14 +88,11 @@ public class Inventory {
         this.updatedAt = LocalDateTime.now();
     }
 
-    // Soft delete: marks the record as deleted
     public void softDelete() {
-        this.deletedAt = LocalDateTime.now(); // Mark as soft deleted
+        this.deletedAt = LocalDateTime.now();
     }
 
-    // Optionally: Method to check if the inventory item is soft deleted
     public boolean isDeleted() {
         return this.deletedAt != null;
     }
 }
-

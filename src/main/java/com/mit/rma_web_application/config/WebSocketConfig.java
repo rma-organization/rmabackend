@@ -1,3 +1,4 @@
+
 package com.mit.rma_web_application.config;
 
 import org.springframework.context.annotation.Configuration;
@@ -11,19 +12,14 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
-    private final WebSocketAuthInterceptor authInterceptor;
+    private final WebSocketAuthInterceptor webSocketAuthInterceptor;
 
-    public WebSocketConfig(WebSocketAuthInterceptor authInterceptor) {
-        this.authInterceptor = authInterceptor;
+    public WebSocketConfig(WebSocketAuthInterceptor webSocketAuthInterceptor) {
+        this.webSocketAuthInterceptor = webSocketAuthInterceptor;
     }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        // Add the raw WebSocket endpoint
-        registry.addEndpoint("/ws")
-                .setAllowedOriginPatterns("*");
-
-        // Also add the SockJS fallback endpoint with the same path
         registry.addEndpoint("/ws")
                 .setAllowedOriginPatterns("*")
                 .withSockJS();
@@ -31,13 +27,14 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
-        registry.setApplicationDestinationPrefixes("/app"); // Prefix for client-to-server messages
-        registry.enableSimpleBroker("/topic", "/queue"); // Enable both public and private messaging channels
-        registry.setUserDestinationPrefix("/user"); // Required for @SendToUser annotation to work
+        registry.setApplicationDestinationPrefixes("/app");
+        registry.enableSimpleBroker("/topic", "/queue");
+        registry.setUserDestinationPrefix("/user");
     }
 
     @Override
     public void configureClientInboundChannel(ChannelRegistration registration) {
-        registration.interceptors(authInterceptor);
+        registration.interceptors(webSocketAuthInterceptor);
     }
 }
+

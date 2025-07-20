@@ -1,3 +1,4 @@
+
 package com.mit.rma_web_application.dtos;
 
 import lombok.Getter;
@@ -20,9 +21,9 @@ public class RequestDTO {
     private String mailIds;
     private CustomerDTO customer;
     private Integer requestedUserId;
+    private String requestedBy; // ✅ NEW FIELD
     private String description;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private LocalDateTime deletedAt;
 }
-

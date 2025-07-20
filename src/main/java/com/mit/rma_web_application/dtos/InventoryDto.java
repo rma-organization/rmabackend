@@ -30,4 +30,8 @@ public class InventoryDto {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private LocalDateTime deletedAt;
+    private String airwaybillnumber;
+    private String currency;
+    private Double amount;
+
 }

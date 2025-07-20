@@ -41,8 +41,17 @@ public class User {
     @Column(name = "role")
     private Set<Role> roles;
 
+    // Fields for password reset functionality
+    private String resetToken;
+    private LocalDateTime resetTokenExpiry;
+
     @PreRemove
     public void onRemove() {
         this.deletedAt = LocalDateTime.now();
+    }
+
+    // Optional helper method
+    public boolean isDeleted() {
+        return deletedAt != null;
     }
 }

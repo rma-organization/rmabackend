@@ -8,6 +8,7 @@ import com.mit.rma_web_application.models.Vendor;
 import com.mit.rma_web_application.repositories.InventoryRepository;
 import com.mit.rma_web_application.repositories.VendorRepository;
 import com.mit.rma_web_application.services.InventoryService;
+import com.mit.rma_web_application.services.interfaces.NotificationService;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -26,8 +27,13 @@ import java.util.stream.Collectors;
 public class InventoryServiceImpl implements InventoryService {
 
     private static final Logger logger = LoggerFactory.getLogger(InventoryServiceImpl.class);
+
     private final InventoryRepository inventoryRepository;
     private final VendorRepository vendorRepository;
+    private final NotificationService notificationService; // ✅ Injected NotificationService
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -42,6 +48,15 @@ public class InventoryServiceImpl implements InventoryService {
         Inventory inventory = InventoryMapper.mapToInventory(inventoryDto, vendor);
         Inventory savedInventory = inventoryRepository.save(inventory);
         logger.info("Created inventory item with ID: {}", savedInventory.getId());
+
+        // ✅ Send notification to all engineers
+        notificationService.sendNotification(
+                "engineer",
+                "New inventory added: " + savedInventory.getName(),
+                "inventory",
+                "admin",
+                null
+        );
 
         return InventoryMapper.mapToInventoryDto(savedInventory);
     }
@@ -104,6 +119,9 @@ public class InventoryServiceImpl implements InventoryService {
         Inventory inventory = inventoryRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Inventory not found"));
 
+        Vendor vendor = vendorRepository.findById(inventoryDto.getVendorId())
+                .orElseThrow(() -> new ResourceNotFoundException("Vendor not found"));
+
         inventory.setName(inventoryDto.getName());
         inventory.setQuantity(inventoryDto.getQuantity());
         inventory.setMitNumber(inventoryDto.getMitNumber());
@@ -117,6 +135,10 @@ public class InventoryServiceImpl implements InventoryService {
         inventory.setInBoxSerialNumber(inventoryDto.getInBoxSerialNumber());
         inventory.setBoxSerialNumber(inventoryDto.getBoxSerialNumber());
         inventory.setStatus(inventoryDto.getStatus());
+        inventory.setAirwayBillNumber(inventoryDto.getAirwaybillnumber());
+        inventory.setCurrency(inventoryDto.getCurrency());
+        inventory.setAmount(inventoryDto.getAmount());
+        inventory.setVendor(vendor);
 
         Inventory updatedInventory = inventoryRepository.save(inventory);
         logger.info("Updated inventory item with ID: {}", updatedInventory.getId());
@@ -144,19 +166,20 @@ public class InventoryServiceImpl implements InventoryService {
     }
 
     @Override
-    @Transactional
     public InventoryDto updateVendor(Long inventoryId, Long vendorId) {
-        Inventory inventory = inventoryRepository.findById(inventoryId)
+        Inventory inventory = inventoryRepository.findByIdAndDeletedAtIsNull(inventoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("Inventory not found"));
 
         Vendor vendor = vendorRepository.findById(vendorId)
                 .orElseThrow(() -> new ResourceNotFoundException("Vendor not found"));
 
         inventory.setVendor(vendor);
+
         entityManager.detach(inventory);
         Inventory updatedInventory = inventoryRepository.save(inventory);
         entityManager.flush();
 
+        logger.info("Updated vendor for inventory ID: {}", inventoryId);
         return InventoryMapper.mapToInventoryDto(updatedInventory);
     }
 }

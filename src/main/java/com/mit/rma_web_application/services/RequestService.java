@@ -4,6 +4,7 @@ import com.mit.rma_web_application.dtos.RequestDTO;
 import com.mit.rma_web_application.mappers.RequestMapper;
 import com.mit.rma_web_application.models.Request;
 import com.mit.rma_web_application.repositories.RequestRepository;
+import com.mit.rma_web_application.services.interfaces.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -21,51 +22,58 @@ public class RequestService {
 
     private final RequestRepository requestRepository;
     private final RequestMapper requestMapper;
+    private final NotificationService notificationService;
 
     public List<RequestDTO> getAllRequests() {
-        log.info("Fetching all active requests...");
         return requestRepository.findAllActiveRequests().stream()
                 .map(requestMapper::toDTO)
                 .collect(Collectors.toList());
     }
 
     public Optional<RequestDTO> getRequestById(Long id) {
-        log.info("Fetching request by ID: {}", id);
         return requestRepository.findById(id)
-                .filter(request -> request.getDeletedAt() == null)
+                .filter(req -> req.getDeletedAt() == null)
                 .map(requestMapper::toDTO);
     }
 
-    public RequestDTO createRequest(RequestDTO requestDTO) {
-        log.info("Creating new request: {}", requestDTO);
-        Request request = requestMapper.toEntity(requestDTO);
-        request.setCreatedAt(LocalDateTime.now());
-        request.setUpdatedAt(LocalDateTime.now());
-        Request savedRequest = requestRepository.save(request);
-        return requestMapper.toDTO(savedRequest);
+    public RequestDTO createRequest(RequestDTO dto, String userName) {
+        dto.setRequestedBy(userName);
+        Request entity = requestMapper.toEntity(dto);
+        entity.setCreatedAt(LocalDateTime.now());
+        entity.setUpdatedAt(LocalDateTime.now());
+        Request saved = requestRepository.save(entity);
+        notificationService.sendNotification("supplychain", "New part request by " + userName, "REQUEST", userName, "Requested");
+        return requestMapper.toDTO(saved);
     }
 
     @Transactional
     public void deleteRequest(Long id) {
-        log.info("Soft deleting request with ID: {}", id);
-        Request request = requestRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Request with ID " + id + " not found"));
-        request.setDeletedAt(LocalDateTime.now());
-        requestRepository.save(request);
-        log.info("Request soft deleted successfully at {}", request.getDeletedAt());
+        Request req = requestRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Request not found"));
+        req.setDeletedAt(LocalDateTime.now());
+        requestRepository.save(req);
     }
 
     @Transactional
-    public Optional<RequestDTO> updateRequest(Long id, RequestDTO requestDTO) {
-        log.info("Updating request with ID: {}", id);
+    public Optional<RequestDTO> updateRequest(Long id, RequestDTO dto) {
         return requestRepository.findById(id)
-                .filter(request -> request.getDeletedAt() == null)
-                .map(existingRequest -> { // Corrected variable name
-                    requestMapper.updateEntityFromDTO(requestDTO, existingRequest); // Corrected variable name
-                    existingRequest.setUpdatedAt(LocalDateTime.now()); // Corrected variable name
-                    Request updatedRequest = requestRepository.save(existingRequest); // Corrected variable name
-                    log.info("Request updated successfully: {}", updatedRequest);
-                    return requestMapper.toDTO(updatedRequest);
+                .filter(r -> r.getDeletedAt() == null)
+                .map(r -> {
+                    requestMapper.updateEntityFromDTO(dto, r);
+                    r.setUpdatedAt(LocalDateTime.now());
+                    return requestMapper.toDTO(requestRepository.save(r));
                 });
+    }
+
+    @Transactional
+    public void updateStatus(Long id, String newStatus, String updatedBy, String role) {
+        Request req = requestRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Request not found"));
+        req.setStatus(newStatus);
+        req.setUpdatedAt(LocalDateTime.now());
+        requestRepository.save(req);
+
+        String message = "Request ID " + id + " status updated to '" + newStatus + "' by " + updatedBy;
+        notificationService.sendNotification(role, message, "STATUS", updatedBy, newStatus);
     }
 }
