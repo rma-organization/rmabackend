@@ -14,7 +14,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
-
+import java.util.Map;
 import java.util.List;
 import java.util.Optional;
 
@@ -38,6 +38,8 @@ public class AuthController {
     @Autowired
     private CustomUserDetailsService userDetailsService;
 
+
+
     /**
      * Endpoint for user registration.
      */
@@ -57,6 +59,15 @@ public class AuthController {
         }
     }
 
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody ForgotPasswordRequestDTO request) {
+        try {
+            userDetailsService.handleForgotPassword(request.getUsername(), request.getEmail());
+            return ResponseEntity.ok().body(Map.of("message", "Password reset link has been sent to your email."));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
     /**
      * Endpoint for user login with role validation and admin approval check.
      */
@@ -92,8 +103,10 @@ public class AuthController {
     }
     @GetMapping("/users")
     public ResponseEntity<List<User>> getAllUsers() {
-        List<User> allUsers = userRepository.findAll();  // Fetch all users, regardless of their approval status.
+        List<User> allUsers = userRepository.findAll();
+        // Fetch all users, regardless of their approval status.
         return ResponseEntity.ok(allUsers);
+
     }
 
     /**
@@ -102,6 +115,7 @@ public class AuthController {
     @GetMapping("/pending-users")
     public ResponseEntity<List<User>> getPendingUsers() {
         List<User> pendingUsers = userRepository.findByApprovalStatus(ApprovalStatus.PENDING);
+
         return ResponseEntity.ok(pendingUsers);
     }
 
@@ -140,4 +154,18 @@ public class AuthController {
         boolean isValid = jwtUtil.validateToken(token, username);
         return isValid ? ResponseEntity.ok("Valid Token") : ResponseEntity.status(401).body("Invalid Token");
     }
-}
+    @RestController
+    public class DashboardController {
+
+        private final IUserService userService;
+
+        public DashboardController(IUserService userService) {
+            this.userService = userService;
+        }
+
+//        @GetMapping("/dashboard")
+//        public ResponseEntity<DashboardResponse> getDashboardData() {
+//            DashboardResponse dashboardData = userService.getDashboardData();
+//            return ResponseEntity.ok(dashboardData);}
+//        }
+    }}
