@@ -1,4 +1,3 @@
-
 package com.mit.rma_web_application.config;
 
 import io.jsonwebtoken.Claims;
@@ -23,14 +22,12 @@ public class JwtUtil {
     @Value("${jwt.expiration}")
     private long expiration; // In milliseconds
 
-    // Signing key for JWT
     private Key getSigningKey() {
         return Keys.hmacShaKeyFor(secretKey.getBytes());
     }
 
     // === Token Generation ===
 
-    // Generate token with username only
     public String generateToken(String username) {
         return Jwts.builder()
                 .setSubject(username)
@@ -40,18 +37,17 @@ public class JwtUtil {
                 .compact();
     }
 
-    // Generate token with username and a single role
+    // ✅ FIXED: use "roles" claim for a single role
     public String generateToken(String username, String role) {
         return Jwts.builder()
                 .setSubject(username)
-                .claim("role", role)
+                .claim("roles", role) // 🔥 CHANGED from "role" to "roles"
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    // Generate token with multiple roles from UserDetails
     public String generateToken(UserDetails userDetails) {
         String roles = userDetails.getAuthorities().stream()
                 .map(auth -> auth.getAuthority())
@@ -66,8 +62,6 @@ public class JwtUtil {
                 .compact();
     }
 
-    // === Token Validation ===
-
     public boolean validateToken(String token, String username) {
         return extractUsername(token).equals(username) && !isTokenExpired(token);
     }
@@ -76,24 +70,26 @@ public class JwtUtil {
         return extractClaim(token, Claims::getExpiration).before(new Date());
     }
 
-    // === Claim Extraction ===
-
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
     }
 
-    public String extractRole(String token) {
-        return extractClaim(token, claims -> claims.get("role", String.class));
-    }
-
+    // ✅ FIXED: unified role extraction
     public List<String> extractRoles(String token) {
         Claims claims = extractAllClaims(token);
-        Object rolesObj = claims.get("roles");
 
+        Object rolesObj = claims.get("roles");
         if (rolesObj instanceof String rolesString) {
             return Arrays.stream(rolesString.split(","))
                     .map(String::trim)
-                    .collect(Collectors.toList());
+                    .filter(s -> !s.isEmpty())
+                    .toList();
+        }
+
+        // Fallback to "role" if "roles" is missing
+        String singleRole = claims.get("role", String.class);
+        if (singleRole != null && !singleRole.isEmpty()) {
+            return List.of(singleRole.trim());
         }
 
         return Collections.emptyList();
