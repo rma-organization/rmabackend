@@ -7,7 +7,7 @@ import com.mit.rma_web_application.models.ApprovalStatus;
 import com.mit.rma_web_application.models.Role;
 import com.mit.rma_web_application.models.User;
 import com.mit.rma_web_application.repositories.UserRepository;
-import com.mit.rma_web_application.services.UserService;
+import com.mit.rma_web_application.services.interfaces.IUserService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Transactional
-public class UserServiceImpl implements UserService {
+public class UserServiceImpl implements IUserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -69,15 +69,26 @@ public class UserServiceImpl implements UserService {
     @Override
     public User approveUser(Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
         user.setApprovalStatus(ApprovalStatus.APPROVED);
+        user.setApprovedAt(LocalDateTime.now());
         return userRepository.save(user);
     }
 
     @Override
     public String generateToken(String username) {
-        UserDetails userDetails = loadUserDetailsByUsername(username);
-        return jwtUtil.generateToken(userDetails);
+        User user = findByUsername(username);
+        if (user == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
+        }
+
+        List<String> roles = user.getRoles().stream()
+                .map(Role::name)
+                .collect(Collectors.toList());
+
+        // Customize token generation as needed
+        String primaryRole = roles.isEmpty() ? "USER" : roles.get(0);
+        return jwtUtil.generateToken(username, primaryRole);
     }
 
     @Override
@@ -140,31 +151,5 @@ public class UserServiceImpl implements UserService {
         response.setMonthlyHeadcount(headcount);
 
         return response;
-    }
-
-    // Helper
-    private UserDetails loadUserDetailsByUsername(String username) {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        List<GrantedAuthority> authorities = user.getRoles().stream()
-                .map(role -> {
-                    String roleName = role.name();
-                    if (!roleName.startsWith("ROLE_")) {
-                        roleName = "ROLE_" + roleName;
-                    }
-                    return new SimpleGrantedAuthority(roleName);
-                })
-                .collect(Collectors.toList());
-
-        return org.springframework.security.core.userdetails.User
-                .withUsername(user.getUsername())
-                .password(user.getPassword())
-                .authorities(authorities)
-                .accountExpired(false)
-                .accountLocked(false)
-                .credentialsExpired(false)
-                .disabled(false)
-                .build();
     }
 }

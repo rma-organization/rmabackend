@@ -6,12 +6,10 @@ import com.mit.rma_web_application.models.*;
 import com.mit.rma_web_application.repositories.UserRepository;
 import com.mit.rma_web_application.services.CustomUserDetailsService;
 import com.mit.rma_web_application.services.EmailService;
-import com.mit.rma_web_application.services.UserService;
 import com.mit.rma_web_application.services.interfaces.IUserService;
 import com.mit.rma_web_application.services.interfaces.NotificationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -34,13 +32,11 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final PasswordEncoder passwordEncoder;
     private final NotificationService notificationService;
-    private final UserService userService;
-
-    @Autowired private JwtUtil jwtUtil;
-    @Autowired private UserRepository userRepository;
-    @Autowired private IUserService iUserService;
-    @Autowired private CustomUserDetailsService userDetailsService;
-    @Autowired private EmailService emailService;
+    private final IUserService userService;  // Use interface only
+    private final JwtUtil jwtUtil;
+    private final UserRepository userRepository;
+    private final CustomUserDetailsService userDetailsService;
+    private final EmailService emailService;
 
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@Valid @RequestBody RegisterRequestDTO registrationDto) {
