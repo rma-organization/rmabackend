@@ -1,3 +1,5 @@
+
+
 package com.mit.rma_web_application.mappers;
 
 import com.mit.rma_web_application.dtos.RequestDTO;
@@ -32,6 +34,7 @@ public class RequestMapper {
         dto.setFaultPartNumber(request.getFaultPartNumber());
         dto.setMailIds(request.getMailIds());
         dto.setRequestedUserId(request.getRequestedUserId());
+        dto.setRequestedBy(request.getRequestedBy()); // ✅ added
         dto.setDescription(request.getDescription());
         dto.setCreatedAt(request.getCreatedAt());
         dto.setUpdatedAt(request.getUpdatedAt());
@@ -48,139 +51,107 @@ public class RequestMapper {
         return dto;
     }
 
-    public Request toEntity(RequestDTO requestDTO) {
-        if (requestDTO == null) {
+    public Request toEntity(RequestDTO dto) {
+        if (dto == null) {
             return null;
         }
 
         logger.debug("Mapping RequestDTO to Request entity");
         Request request = new Request();
 
-        request.setId(requestDTO.getId());
-        request.setName(requestDTO.getName());
-        request.setStatus(requestDTO.getStatus());
-        request.setPartId(requestDTO.getPartId());
-        request.setSrNumber(requestDTO.getSrNumber());
-        request.setFieldServiceTaskNumber(requestDTO.getFieldServiceTaskNumber());
-        request.setFaultPartNumber(requestDTO.getFaultPartNumber());
-        request.setMailIds(requestDTO.getMailIds());
-        request.setRequestedUserId(requestDTO.getRequestedUserId());
-        request.setDescription(requestDTO.getDescription());
-        request.setCreatedAt(requestDTO.getCreatedAt());
-        request.setUpdatedAt(requestDTO.getUpdatedAt());
-        request.setDeletedAt(requestDTO.getDeletedAt());
+        request.setId(dto.getId());
+        request.setName(dto.getName());
+        request.setStatus(dto.getStatus());
+        request.setPartId(dto.getPartId());
+        request.setSrNumber(dto.getSrNumber());
+        request.setFieldServiceTaskNumber(dto.getFieldServiceTaskNumber());
+        request.setFaultPartNumber(dto.getFaultPartNumber());
+        request.setMailIds(dto.getMailIds());
+        request.setRequestedUserId(dto.getRequestedUserId());
+        request.setRequestedBy(dto.getRequestedBy()); // ✅ added
+        request.setDescription(dto.getDescription());
+        request.setCreatedAt(dto.getCreatedAt());
+        request.setUpdatedAt(dto.getUpdatedAt());
+        request.setDeletedAt(dto.getDeletedAt());
 
-        if (requestDTO.getVendor() != null) {
-            request.setVendor(toVendorEntity(requestDTO.getVendor()));
+        if (dto.getVendor() != null) {
+            request.setVendor(toVendorEntity(dto.getVendor()));
         }
 
-        if (requestDTO.getCustomer() != null) {
-            request.setCustomer(toCustomerEntity(requestDTO.getCustomer()));
+        if (dto.getCustomer() != null) {
+            request.setCustomer(toCustomerEntity(dto.getCustomer()));
         }
 
         return request;
     }
 
-    public void updateEntityFromDTO(RequestDTO requestDTO, Request request) {
-        if (requestDTO == null || request == null) {
+    public void updateEntityFromDTO(RequestDTO dto, Request request) {
+        if (dto == null || request == null) {
             logger.warn("Cannot update Request entity - RequestDTO or Request entity is null");
             return;
         }
 
         logger.debug("Updating Request entity with ID: {}", request.getId());
 
-        if (requestDTO.getName() != null) {
-            request.setName(requestDTO.getName());
-        }
-        if (requestDTO.getStatus() != null) {
-            request.setStatus(requestDTO.getStatus());
-        }
-        if (requestDTO.getPartId() != null) {
-            request.setPartId(requestDTO.getPartId());
-        }
-        if (requestDTO.getSrNumber() != null) {
-            request.setSrNumber(requestDTO.getSrNumber());
-        }
-        if (requestDTO.getFieldServiceTaskNumber() != null) {
-            request.setFieldServiceTaskNumber(requestDTO.getFieldServiceTaskNumber());
-        }
-        if (requestDTO.getFaultPartNumber() != null) {
-            request.setFaultPartNumber(requestDTO.getFaultPartNumber());
-        }
-        if (requestDTO.getMailIds() != null) {
-            request.setMailIds(requestDTO.getMailIds());
-        }
-        if (requestDTO.getRequestedUserId() != null) {
-            request.setRequestedUserId(requestDTO.getRequestedUserId());
-        }
-        if (requestDTO.getDescription() != null) {
-            request.setDescription(requestDTO.getDescription());
+        if (dto.getName() != null) request.setName(dto.getName());
+        if (dto.getStatus() != null) request.setStatus(dto.getStatus());
+        if (dto.getPartId() != null) request.setPartId(dto.getPartId());
+        if (dto.getSrNumber() != null) request.setSrNumber(dto.getSrNumber());
+        if (dto.getFieldServiceTaskNumber() != null) request.setFieldServiceTaskNumber(dto.getFieldServiceTaskNumber());
+        if (dto.getFaultPartNumber() != null) request.setFaultPartNumber(dto.getFaultPartNumber());
+        if (dto.getMailIds() != null) request.setMailIds(dto.getMailIds());
+        if (dto.getRequestedUserId() != null) request.setRequestedUserId(dto.getRequestedUserId());
+        if (dto.getRequestedBy() != null) request.setRequestedBy(dto.getRequestedBy()); // ✅ added
+        if (dto.getDescription() != null) request.setDescription(dto.getDescription());
+
+        if (dto.getVendor() != null) {
+            if (request.getVendor() == null) request.setVendor(new Vendor());
+            request.getVendor().setId(dto.getVendor().getId());
+            request.getVendor().setName(dto.getVendor().getName());
         }
 
-        if (requestDTO.getVendor() != null) {
-            if (request.getVendor() == null) {
-                request.setVendor(new Vendor());
-            }
-            request.getVendor().setId(requestDTO.getVendor().getId());
-            request.getVendor().setName(requestDTO.getVendor().getName());
+        if (dto.getCustomer() != null) {
+            if (request.getCustomer() == null) request.setCustomer(new Customer());
+            request.getCustomer().setId(dto.getCustomer().getId());
+            request.getCustomer().setName(dto.getCustomer().getName());
         }
 
-        if (requestDTO.getCustomer() != null) {
-            if (request.getCustomer() == null) {
-                request.setCustomer(new Customer());
-            }
-            request.getCustomer().setId(requestDTO.getCustomer().getId());
-            request.getCustomer().setName(requestDTO.getCustomer().getName());
-        }
-
-        request.setUpdatedAt(requestDTO.getUpdatedAt());
+        request.setUpdatedAt(dto.getUpdatedAt());
     }
 
     private VendorDTO toVendorDTO(Vendor vendor) {
-        if (vendor == null) {
-            return null;
-        }
-
+        if (vendor == null) return null;
         logger.debug("Mapping Vendor entity to VendorDTO for ID: {}", vendor.getId());
-        VendorDTO vendorDTO = new VendorDTO();
-        vendorDTO.setId(vendor.getId());
-        vendorDTO.setName(vendor.getName());
-        return vendorDTO;
+        VendorDTO dto = new VendorDTO();
+        dto.setId(vendor.getId());
+        dto.setName(vendor.getName());
+        return dto;
     }
 
-    private Vendor toVendorEntity(VendorDTO vendorDTO) {
-        if (vendorDTO == null) {
-            return null;
-        }
-
-        logger.debug("Mapping VendorDTO to Vendor entity for ID: {}", vendorDTO.getId());
+    private Vendor toVendorEntity(VendorDTO dto) {
+        if (dto == null) return null;
+        logger.debug("Mapping VendorDTO to Vendor entity for ID: {}", dto.getId());
         Vendor vendor = new Vendor();
-        vendor.setId(vendorDTO.getId());
-        vendor.setName(vendorDTO.getName());
+        vendor.setId(dto.getId());
+        vendor.setName(dto.getName());
         return vendor;
     }
 
     private CustomerDTO toCustomerDTO(Customer customer) {
-        if (customer == null) {
-            return null;
-        }
-
+        if (customer == null) return null;
         logger.debug("Mapping Customer entity to CustomerDTO for ID: {}", customer.getId());
-        CustomerDTO customerDTO = new CustomerDTO();
-        customerDTO.setId(customer.getId());
-        customerDTO.setName(customer.getName());
-        return customerDTO;
+        CustomerDTO dto = new CustomerDTO();
+        dto.setId(customer.getId());
+        dto.setName(customer.getName());
+        return dto;
     }
 
-    private Customer toCustomerEntity(CustomerDTO customerDTO) {
-        if (customerDTO == null) {
-            return null;
-        }
-
-        logger.debug("Mapping CustomerDTO to Customer entity for ID: {}", customerDTO.getId());
+    private Customer toCustomerEntity(CustomerDTO dto) {
+        if (dto == null) return null;
+        logger.debug("Mapping CustomerDTO to Customer entity for ID: {}", dto.getId());
         Customer customer = new Customer();
-        customer.setId(customerDTO.getId());
-        customer.setName(customerDTO.getName());
+        customer.setId(dto.getId());
+        customer.setName(dto.getName());
         return customer;
     }
 }

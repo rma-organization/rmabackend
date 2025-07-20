@@ -23,9 +23,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     List<User> findByApprovalStatus(ApprovalStatus approvalStatus);
 
-    long countByApprovalStatus(ApprovalStatus status); // ✅ Required
+    // ✅ Keep both active user queries and counting methods
+    @Query("SELECT u FROM User u WHERE u.deletedAt IS NULL")
+    List<User> findAllActiveUsers();
 
-    @Query("SELECT u FROM User u JOIN FETCH u.roles")
+    @Query("SELECT u FROM User u JOIN FETCH u.roles WHERE u.deletedAt IS NULL")
     List<User> findAllUsersWithRoles();
 
     @Query("SELECT COUNT(u) FROM User u")
@@ -42,4 +44,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query("SELECT u FROM User u WHERE u.createdAt >= :since")
     List<User> findRecentUsers(LocalDateTime since);
+
+    long countByApprovalStatus(ApprovalStatus status); // Keep this from dev
 }

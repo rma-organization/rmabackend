@@ -32,6 +32,7 @@ public class User {
     private LocalDateTime createdAt;
 
     private LocalDateTime approvedAt;
+
     private LocalDateTime deletedAt;
 
     @ElementCollection(fetch = FetchType.EAGER)
@@ -47,5 +48,10 @@ public class User {
     @PreRemove
     public void onRemove() {
         this.deletedAt = LocalDateTime.now();
+    }
+
+    // Optional helper method
+    public boolean isDeleted() {
+        return deletedAt != null;
     }
 }

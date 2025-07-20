@@ -1,6 +1,4 @@
 
-// ChatMessageEntity.java
-
 
 package com.mit.rma_web_application.models;
 

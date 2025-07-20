@@ -5,11 +5,13 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
-import java.util.Date;
+import java.util.*;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Component
 public class JwtUtil {
@@ -36,11 +38,16 @@ public class JwtUtil {
                 .compact();
     }
 
-    // Generate token with just username (optional overload)
-    public String generateToken(String username) {
+    // Generate token with multiple roles from UserDetails
+    public String generateToken(UserDetails userDetails) {
+        String roles = userDetails.getAuthorities().stream()
+                .map(auth -> auth.getAuthority())
+                .collect(Collectors.joining(","));
+
         return Jwts.builder()
-                .setSubject(username)
-                .setIssuedAt(new Date())
+                .setSubject(userDetails.getUsername())
+                .claim("roles", roles)
+                .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
@@ -51,9 +58,28 @@ public class JwtUtil {
         return extractClaim(token, Claims::getSubject);
     }
 
-    // Extract role from token
+    // Extract single role (if applicable)
     public String extractRole(String token) {
         return extractClaim(token, claims -> claims.get("role", String.class));
+    }
+
+    // Extract all roles (if stored as comma-separated string)
+    public List<String> extractRoles(String token) {
+        Claims claims = extractAllClaims(token);
+        Object rolesObj = claims.get("roles");
+
+        if (rolesObj instanceof String rolesString) {
+            return Arrays.stream(rolesString.split(","))
+                    .map(String::trim)
+                    .collect(Collectors.toList());
+        }
+
+        return Collections.emptyList();
+    }
+
+    // Validate token with username
+    public boolean validateToken(String token, String username) {
+        return extractUsername(token).equals(username) && !isTokenExpired(token);
     }
 
     // Generic claim extractor
@@ -74,10 +100,5 @@ public class JwtUtil {
     // Check if token is expired
     private boolean isTokenExpired(String token) {
         return extractClaim(token, Claims::getExpiration).before(new Date());
-    }
-
-    // Validate token with username
-    public boolean validateToken(String token, String username) {
-        return extractUsername(token).equals(username) && !isTokenExpired(token);
     }
 }

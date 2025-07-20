@@ -14,7 +14,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.web.filter.CorsFilter;
 
 import java.util.List;
 
@@ -34,7 +33,7 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        // Public endpoints (Remove admin/user-stats here)
+                        // Public auth endpoints
                         .requestMatchers(
                                 "/api/auth/login",
                                 "/api/auth/register",
@@ -45,25 +44,29 @@ public class SecurityConfig {
                                 "/api/auth/reset-password"
                         ).permitAll()
 
-                        // Allow public access to certain resources
+                        // Public resource endpoints
                         .requestMatchers("/api/vendors/**").permitAll()
-                        .requestMatchers("/api/requests/**").permitAll()
                         .requestMatchers("/api/customers/**").permitAll()
                         .requestMatchers("/api/inventory/**").permitAll()
                         .requestMatchers("/ws/**").permitAll()
 
-                        // Secure admin user stats and other admin endpoints
+                        // Admin-only endpoints
                         .requestMatchers("/api/auth/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
+                        // Role-based access
+                        .requestMatchers("/api/requests/**").hasAnyRole("ADMIN", "SUPPLYCHAIN", "ENGINEER", "RMA")
                         .requestMatchers("/api/engineer/**").hasRole("ENGINEER")
-                        .requestMatchers("/api/supplychain/**").hasAnyRole("SUPPLYCHAIN")
+                        .requestMatchers("/api/supplychain/**").hasRole("SUPPLYCHAIN")
                         .requestMatchers("/api/rma/**").hasRole("RMA")
 
-                        // Everything else requires authentication
+                        // Notifications require authentication
+                        .requestMatchers("/api/notifications/**").authenticated()
+
+                        // Everything else
                         .anyRequest().authenticated()
                 )
-                .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -72,11 +75,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of(
-                "http://localhost:5173",
-                "http://localhost:3000",
-                "http://localhost:5174"
-        ));
+        config.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:3000", "http://localhost:5174"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
@@ -87,17 +86,12 @@ public class SecurityConfig {
     }
 
     @Bean
-    public CorsFilter corsFilter() {
-        return new CorsFilter(corsConfigurationSource());
-    }
-
-    @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
-        return authConfig.getAuthenticationManager();
-    }
-
-    @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
     }
 }

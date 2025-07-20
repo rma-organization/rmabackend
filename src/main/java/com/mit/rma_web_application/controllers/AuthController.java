@@ -6,11 +6,17 @@ import com.mit.rma_web_application.models.*;
 import com.mit.rma_web_application.repositories.UserRepository;
 import com.mit.rma_web_application.services.CustomUserDetailsService;
 import com.mit.rma_web_application.services.EmailService;
+import com.mit.rma_web_application.services.UserService;
 import com.mit.rma_web_application.services.interfaces.IUserService;
+import com.mit.rma_web_application.services.interfaces.NotificationService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
@@ -20,44 +26,74 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
-@CrossOrigin(origins = "http://localhost:5173")
 @RequestMapping("/api/auth")
+@RequiredArgsConstructor
+@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000", "http://localhost:5174"})
 public class AuthController {
 
-    @Autowired
-    private AuthenticationManager authenticationManager;
+    private final AuthenticationManager authenticationManager;
+    private final PasswordEncoder passwordEncoder;
+    private final NotificationService notificationService;
+    private final UserService userService;
 
-    @Autowired
-    private JwtUtil jwtUtil;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private IUserService userService;
-
-    @Autowired
-    private CustomUserDetailsService userDetailsService;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    @Autowired
-    private EmailService emailService;
+    @Autowired private JwtUtil jwtUtil;
+    @Autowired private UserRepository userRepository;
+    @Autowired private IUserService iUserService;
+    @Autowired private CustomUserDetailsService userDetailsService;
+    @Autowired private EmailService emailService;
 
     @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@RequestBody RegisterRequestDTO registerRequest) {
-        if (userRepository.existsByUsername(registerRequest.getUsername())) {
-            return ResponseEntity.badRequest().body("Username is already taken.");
+    public ResponseEntity<?> registerUser(@Valid @RequestBody RegisterRequestDTO registrationDto) {
+        if (userService.existsByUsername(registrationDto.getUsername())) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("Username already exists");
         }
-        if (userRepository.existsByEmail(registerRequest.getEmail())) {
-            return ResponseEntity.badRequest().body("Email is already in use.");
-        }
+
+        User newUser = userService.registerUser(registrationDto);
+
+        notificationService.sendNotification(
+                "ADMIN",
+                "New user registered: " + newUser.getUsername() + ". Please review and approve.",
+                "INFO",
+                newUser.getUsername(),
+                null
+        );
+
+        return ResponseEntity.status(HttpStatus.CREATED).body("Registration successful. Await admin approval.");
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody AuthRequest authRequest) {
         try {
-            userService.registerUser(registerRequest);
-            return ResponseEntity.ok("User registered successfully. Awaiting admin approval.");
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Error: " + e.getMessage());
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(authRequest.getUsername(), authRequest.getPassword())
+            );
+
+            User user = userService.findByUsername(authRequest.getUsername());
+            if (user == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid username or password");
+            }
+
+            if (user.getApprovalStatus() != ApprovalStatus.APPROVED) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User is not approved yet");
+            }
+
+            Role inputRole;
+            try {
+                inputRole = Role.valueOf(authRequest.getRole().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid role selected");
+            }
+
+            if (!user.getRoles().contains(inputRole)) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid role selected");
+            }
+
+            UserDetails userDetails = userDetailsService.loadUserByUsername(authRequest.getUsername());
+            String token = jwtUtil.generateToken(userDetails.getUsername(), inputRole.name());
+
+            return ResponseEntity.ok(new AuthResponse(token, authRequest.getRole()));
+        } catch (AuthenticationException ex) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid username or password");
         }
     }
 
@@ -80,6 +116,7 @@ public class AuthController {
         String text = "Dear " + user.getUsername() + ",\n\n" +
                 "We received a request to reset your password. Please use the following link to reset your password. This link will expire in 30 minutes.\n\n" +
                 resetLink + "\n\nIf you did not request a password reset, please ignore this email.";
+
         try {
             emailService.sendSimpleMessage(user.getEmail(), subject, text);
         } catch (Exception e) {
@@ -110,41 +147,13 @@ public class AuthController {
         return ResponseEntity.ok(Map.of("message", "Password has been reset successfully."));
     }
 
-    @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody AuthRequest authRequest) {
-        Optional<User> userOptional = userRepository.findByUsername(authRequest.getUsername());
-
-        if (userOptional.isEmpty()) {
-            return ResponseEntity.badRequest().body("User not found");
-        }
-
-        User user = userOptional.get();
-
-        if (!ApprovalStatus.APPROVED.equals(user.getApprovalStatus())) {
-            return ResponseEntity.status(403).body("User is not approved by admin.");
-        }
-
-        if (!user.getRoles().contains(authRequest.getRole())) {
-            return ResponseEntity.status(403).body("User does not have the requested role.");
-        }
-
-        try {
-            authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(authRequest.getUsername(), authRequest.getPassword())
-            );
-        } catch (Exception e) {
-            return ResponseEntity.status(401).body("Invalid credentials");
-        }
-
-        UserDetails userDetails = userDetailsService.loadUserByUsername(authRequest.getUsername());
-        String token = jwtUtil.generateToken(userDetails.getUsername(), authRequest.getRole().name());
-        return ResponseEntity.ok(new AuthResponse(token, authRequest.getRole()));
-    }
-
     @GetMapping("/users")
-    public ResponseEntity<List<User>> getAllUsers() {
-        List<User> allUsers = userRepository.findAll();
-        return ResponseEntity.ok(allUsers);
+    public ResponseEntity<?> getAllUsers() {
+        try {
+            return ResponseEntity.ok(userService.getAllUsers());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error fetching users");
+        }
     }
 
     @PutMapping("/update-user")
@@ -173,30 +182,42 @@ public class AuthController {
     }
 
     @GetMapping("/pending-users")
-    public ResponseEntity<List<User>> getPendingUsers() {
-        List<User> pendingUsers = userRepository.findByApprovalStatus(ApprovalStatus.PENDING);
-        return ResponseEntity.ok(pendingUsers);
+    public ResponseEntity<?> getPendingUsers() {
+        try {
+            List<User> pendingUsers = userService.getPendingUsers();
+            return ResponseEntity.ok(pendingUsers);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to fetch pending users.");
+        }
     }
 
     @PostMapping("/approve")
-    public ResponseEntity<?> approveUser(@RequestBody ApprovelStatusDTO approvelStatusDTO) {
-        Optional<User> userOptional = userRepository.findByUsername(approvelStatusDTO.getUsername());
-        if (userOptional.isEmpty()) {
-            return ResponseEntity.badRequest().body("User not found");
+    public ResponseEntity<?> approveUser(@RequestBody Map<String, String> request) {
+        String username = request.get("username");
+        String approvalStatus = request.get("approvalStatus");
+
+        if (username == null || approvalStatus == null) {
+            return ResponseEntity.badRequest().body("Missing username or approvalStatus");
         }
 
-        User user = userOptional.get();
-        if (ApprovalStatus.APPROVED.equals(user.getApprovalStatus())) {
-            return ResponseEntity.status(400).body("User is already approved.");
+        User user = userService.findByUsername(username);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
         }
 
-        user.setApprovalStatus(approvelStatusDTO.getApprovalStatus());
-        if (ApprovalStatus.APPROVED.equals(approvelStatusDTO.getApprovalStatus())) {
-            user.setApprovedAt(LocalDateTime.now());
-        }
+        try {
+            ApprovalStatus status = ApprovalStatus.valueOf(approvalStatus);
+            user.setApprovalStatus(status);
 
-        userRepository.save(user);
-        return ResponseEntity.ok("User approval status updated successfully.");
+            if (status == ApprovalStatus.APPROVED) {
+                user.setApprovedAt(LocalDateTime.now());
+            }
+
+            userService.save(user);
+            return ResponseEntity.ok("User status updated");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body("Invalid approvalStatus");
+        }
     }
 
     @GetMapping("/validate")
