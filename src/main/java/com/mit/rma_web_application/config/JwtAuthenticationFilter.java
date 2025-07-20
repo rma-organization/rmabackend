@@ -1,3 +1,4 @@
+
 package com.mit.rma_web_application.config;
 
 import io.jsonwebtoken.JwtException;
@@ -51,7 +52,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        String token = authHeader.substring(7); // Remove "Bearer "
+        String token = authHeader.substring(7);
 
         try {
             String username = jwtUtil.extractUsername(token);
@@ -63,10 +64,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     List<String> roles = jwtUtil.extractRoles(token);
 
                     List<GrantedAuthority> authorities = roles.stream()
-                            .map(role -> {
-                                String cleanRole = role.startsWith("ROLE_") ? role.substring(5) : role;
-                                return new SimpleGrantedAuthority("ROLE_" + cleanRole);
-                            })
+                            .map(role -> role.startsWith("ROLE_") ? role : "ROLE_" + role)
+                            .map(SimpleGrantedAuthority::new)
                             .collect(Collectors.toList());
 
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(

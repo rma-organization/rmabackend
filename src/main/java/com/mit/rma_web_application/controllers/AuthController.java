@@ -32,7 +32,8 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final PasswordEncoder passwordEncoder;
     private final NotificationService notificationService;
-    private final IUserService userService;  // Use interface only
+    private final IUserService userService;
+
     private final JwtUtil jwtUtil;
     private final UserRepository userRepository;
     private final CustomUserDetailsService userDetailsService;
@@ -40,21 +41,28 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@Valid @RequestBody RegisterRequestDTO registrationDto) {
-        if (userService.existsByUsername(registrationDto.getUsername())) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("Username already exists");
+        if (userRepository.existsByUsername(registrationDto.getUsername())) {
+            return ResponseEntity.badRequest().body("Username is already taken.");
+        }
+        if (userRepository.existsByEmail(registrationDto.getEmail())) {
+            return ResponseEntity.badRequest().body("Email is already in use.");
         }
 
-        User newUser = userService.registerUser(registrationDto);
+        try {
+            User newUser = userService.registerUser(registrationDto);
 
-        notificationService.sendNotification(
-                "ADMIN",
-                "New user registered: " + newUser.getUsername() + ". Please review and approve.",
-                "INFO",
-                newUser.getUsername(),
-                null
-        );
+            notificationService.sendNotification(
+                    "ADMIN",
+                    "New user registered: " + newUser.getUsername() + ". Please review and approve.",
+                    "INFO",
+                    newUser.getUsername(),
+                    null
+            );
 
-        return ResponseEntity.status(HttpStatus.CREATED).body("Registration successful. Await admin approval.");
+            return ResponseEntity.status(HttpStatus.CREATED).body("User registered successfully. Awaiting admin approval.");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error: " + e.getMessage());
+        }
     }
 
     @PostMapping("/login")
@@ -70,7 +78,7 @@ public class AuthController {
             }
 
             if (user.getApprovalStatus() != ApprovalStatus.APPROVED) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User is not approved yet");
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("User is not approved by admin.");
             }
 
             Role inputRole;
@@ -81,13 +89,13 @@ public class AuthController {
             }
 
             if (!user.getRoles().contains(inputRole)) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid role selected");
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("User does not have the requested role.");
             }
 
             UserDetails userDetails = userDetailsService.loadUserByUsername(authRequest.getUsername());
             String token = jwtUtil.generateToken(userDetails.getUsername(), inputRole.name());
 
-            return ResponseEntity.ok(new AuthResponse(token, authRequest.getRole()));
+            return ResponseEntity.ok(new AuthResponse(token, inputRole.name()));
         } catch (AuthenticationException ex) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid username or password");
         }
@@ -110,8 +118,8 @@ public class AuthController {
         String resetLink = "http://localhost:5173/reset-password?token=" + token;
         String subject = "RMA Web Application - Password Reset Request";
         String text = "Dear " + user.getUsername() + ",\n\n" +
-                "We received a request to reset your password. Please use the following link to reset your password. This link will expire in 30 minutes.\n\n" +
-                resetLink + "\n\nIf you did not request a password reset, please ignore this email.";
+                "We received a request to reset your password. Use the following link to reset your password. This link expires in 30 minutes:\n\n" +
+                resetLink + "\n\nIf you did not request this, ignore this email.";
 
         try {
             emailService.sendSimpleMessage(user.getEmail(), subject, text);
@@ -188,29 +196,24 @@ public class AuthController {
     }
 
     @PostMapping("/approve")
-    public ResponseEntity<?> approveUser(@RequestBody Map<String, String> request) {
-        String username = request.get("username");
-        String approvalStatus = request.get("approvalStatus");
-
-        if (username == null || approvalStatus == null) {
-            return ResponseEntity.badRequest().body("Missing username or approvalStatus");
+    public ResponseEntity<?> approveUser(@RequestBody ApprovelStatusDTO dto) {
+        Optional<User> userOptional = userRepository.findByUsername(dto.getUsername());
+        if (userOptional.isEmpty()) {
+            return ResponseEntity.badRequest().body("User not found");
         }
 
-        User user = userService.findByUsername(username);
-        if (user == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
-        }
+        User user = userOptional.get();
 
         try {
-            ApprovalStatus status = ApprovalStatus.valueOf(approvalStatus);
+            ApprovalStatus status = dto.getApprovalStatus();
             user.setApprovalStatus(status);
 
             if (status == ApprovalStatus.APPROVED) {
                 user.setApprovedAt(LocalDateTime.now());
             }
 
-            userService.save(user);
-            return ResponseEntity.ok("User status updated");
+            userRepository.save(user);
+            return ResponseEntity.ok("User approval status updated successfully.");
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body("Invalid approvalStatus");
         }

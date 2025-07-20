@@ -9,22 +9,12 @@ import java.util.Map;
 
 public interface IUserService {
     User registerUser(RegisterRequestDTO user);
-
-    boolean existsByUsername(String username);
-
-    User findByUsername(String username);
-
-    List<User> getPendingUsers();
-
-    User approveUser(Long userId);
-
-    String generateToken(String username);
-
-    User save(User user);
-
-    List<User> getAllUsers();
-
     Map<String, Object> getUserStatistics();
-
     DashboardResponse getDashboardData();
+
+    // Additional methods you need
+    User findByUsername(String username);
+    List<User> getAllUsers();
+    List<User> getPendingUsers();
+    User approveUser(Long userId);
 }
