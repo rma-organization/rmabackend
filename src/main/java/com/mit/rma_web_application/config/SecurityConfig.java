@@ -44,6 +44,8 @@ public class SecurityConfig {
                                 "/api/auth/forgot-password",
                                 "/api/auth/reset-password"
                         ).permitAll()
+
+                        // Allow public access to certain resources
                         .requestMatchers("/api/vendors/**").permitAll()
                         .requestMatchers("/api/requests/**").permitAll()
                         .requestMatchers("/api/customers/**").permitAll()

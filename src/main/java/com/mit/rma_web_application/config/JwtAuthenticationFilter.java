@@ -23,50 +23,73 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Autowired
     private JwtUtil jwtUtil;
 
+    @Autowired
+    private UserDetailsService userDetailsService;
+
+    /**
+     * This method determines whether the filter should NOT be applied to the request.
+     * It allows unauthenticated access to login and registration endpoints.
+     */
     @Override
     protected boolean shouldNotFilter(@NonNull HttpServletRequest request) throws ServletException {
         String path = request.getRequestURI();
-        return path.startsWith("/api/auth/login")
-                || path.startsWith("/api/auth/register")
-                || path.startsWith("/api/auth/forgot-password")
-                || path.startsWith("/api/auth/reset-password");
+        // Allow login & register endpoints to bypass JWT authentication
+        return path.startsWith("/api/auth/login") || path.startsWith("/api/auth/register");
     }
 
+    /**
+     * This method is called for every HTTP request that passes through the filter chain.
+     * It checks for a JWT in the Authorization header and sets the security context if valid.
+     */
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request,
                                     @NonNull HttpServletResponse response,
-                                    @NonNull FilterChain filterChain)
+                                    @NonNull FilterChain chain)
             throws ServletException, IOException {
 
-        String authHeader = request.getHeader("Authorization");
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            filterChain.doFilter(request, response);
+        // Extract Authorization header (expected format: "Bearer <token>")
+        String authorizationHeader = request.getHeader("Authorization");
+
+        // If header is missing or doesn't start with "Bearer ", skip JWT processing
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            chain.doFilter(request, response); // Continue to next filter
             return;
         }
 
-        String token = authHeader.substring(7);
+        // Remove "Bearer " prefix to get the actual token
+        String token = authorizationHeader.substring(7);
 
         try {
+            // Extract username from token
             String username = jwtUtil.extractUsername(token);
-            String role = jwtUtil.extractClaim(token, claims -> claims.get("role", String.class));
 
+            // Check if username is valid and no authentication is currently set in context
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + role);
-                UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
-                        username,
-                        null,
-                        List.of(authority)
-                );
 
-                auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(auth);
+                // Load user details from database
+                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+
+                // Validate the token against the username
+                if (jwtUtil.validateToken(token, userDetails.getUsername())) {
+                    // Create authentication token with user details and authorities (roles)
+                    UsernamePasswordAuthenticationToken authentication =
+                            new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+
+                    // Add request details (IP, session, etc.) to the authentication object
+                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+                    // Set authentication in the security context
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                }
             }
 
-            filterChain.doFilter(request, response);
-
         } catch (JwtException ex) {
+            // If token is invalid or expired, return 401 Unauthorized
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.getWriter().write("Unauthorized: " + ex.getMessage());
         }
+
+        // Continue to the next filter or controller
+        chain.doFilter(request, response);
     }
 }

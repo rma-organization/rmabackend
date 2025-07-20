@@ -14,10 +14,10 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
-
 import java.time.LocalDateTime;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.Map;
+import java.util.List;
+import java.util.Optional;
 
 @RestController
 @CrossOrigin(origins = "http://localhost:5173")
@@ -39,12 +39,11 @@ public class AuthController {
     @Autowired
     private CustomUserDetailsService userDetailsService;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
 
-    @Autowired
-    private EmailService emailService;
 
+    /**
+     * Endpoint for user registration.
+     */
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody RegisterRequestDTO registerRequest) {
         if (userRepository.existsByUsername(registerRequest.getUsername())) {
@@ -61,6 +60,18 @@ public class AuthController {
         }
     }
 
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody ForgotPasswordRequestDTO request) {
+        try {
+            userDetailsService.handleForgotPassword(request.getUsername(), request.getEmail());
+            return ResponseEntity.ok().body(Map.of("message", "Password reset link has been sent to your email."));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+    /**
+     * Endpoint for user login with role validation and admin approval check.
+     */
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody AuthRequest authRequest) {
         Optional<User> userOptional = userRepository.findByUsername(authRequest.getUsername());
@@ -95,7 +106,9 @@ public class AuthController {
     @GetMapping("/users")
     public ResponseEntity<List<User>> getAllUsers() {
         List<User> allUsers = userRepository.findAll();
+        // Fetch all users, regardless of their approval status.
         return ResponseEntity.ok(allUsers);
+
     }
 
     @PutMapping("/update-user")
@@ -126,6 +139,7 @@ public class AuthController {
     @GetMapping("/pending-users")
     public ResponseEntity<List<User>> getPendingUsers() {
         List<User> pendingUsers = userRepository.findByApprovalStatus(ApprovalStatus.PENDING);
+
         return ResponseEntity.ok(pendingUsers);
     }
 
@@ -155,58 +169,18 @@ public class AuthController {
         boolean isValid = jwtUtil.validateToken(token, username);
         return isValid ? ResponseEntity.ok("Valid Token") : ResponseEntity.status(401).body("Invalid Token");
     }
+    @RestController
+    public class DashboardController {
 
-    @PostMapping("/forgot-password")
-    public ResponseEntity<?> forgotPassword(@RequestBody ForgotPasswordRequest request) {
-        Optional<User> userOpt = userRepository.findByUsername(request.getUsername());
+        private final IUserService userService;
 
-        if (userOpt.isEmpty() || !userOpt.get().getEmail().equalsIgnoreCase(request.getEmail())) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Invalid username or email."));
+        public DashboardController(IUserService userService) {
+            this.userService = userService;
         }
 
-        User user = userOpt.get();
-        String token = UUID.randomUUID().toString();
-        user.setResetToken(token);
-        user.setResetTokenExpiry(LocalDateTime.now().plusMinutes(30));
-        userRepository.save(user);
-
-        String resetLink = "http://localhost:5173/reset-password?token=" + token;
-        String subject = "RMA Web Application - Password Reset Request";
-        String text = "Dear " + user.getUsername() + ",\n\n" +
-                "We received a request to reset your password. Please use the following link to reset your password. This link will expire in 30 minutes.\n\n" +
-                resetLink + "\n\nIf you did not request a password reset, please ignore this email.";
-        try {
-            emailService.sendSimpleMessage(user.getEmail(), subject, text);
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("error", "Failed to send email: " + e.getMessage()));
-        }
-
-        return ResponseEntity.ok(Map.of("message", "Password reset link sent to your email."));
-    }
-
-    @PostMapping("/reset-password")
-    public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest request) {
-        Optional<User> userOpt = userRepository.findByResetToken(request.getToken());
-
-        if (userOpt.isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Invalid or expired token."));
-        }
-
-        User user = userOpt.get();
-        if (user.getResetTokenExpiry() == null || user.getResetTokenExpiry().isBefore(LocalDateTime.now())) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Token has expired."));
-        }
-
-        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
-        user.setResetToken(null);
-        user.setResetTokenExpiry(null);
-        userRepository.save(user);
-
-        return ResponseEntity.ok(Map.of("message", "Password has been reset successfully."));
-    }
-
-    @GetMapping("/admin/user-stats")
-    public ResponseEntity<?> getUserStats() {
-        return ResponseEntity.ok(userService.getUserStatistics());
-    }
-}
+//        @GetMapping("/dashboard")
+//        public ResponseEntity<DashboardResponse> getDashboardData() {
+//            DashboardResponse dashboardData = userService.getDashboardData();
+//            return ResponseEntity.ok(dashboardData);}
+//        }
+    }}
