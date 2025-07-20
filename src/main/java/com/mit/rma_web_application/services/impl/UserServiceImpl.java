@@ -46,11 +46,11 @@ public class UserServiceImpl implements IUserService {
         return userRepository.save(user);
     }
 
-    // ✅ Add dashboard method here
-    public DashboardResponse getDashboardData() {
-        DashboardResponse.UserStatusCounts counts = new DashboardResponse.UserStatusCounts();
-        counts.setApproved(userRepository.countByApprovalStatus(ApprovalStatus.APPROVED));
-        counts.setPending(userRepository.countByApprovalStatus(ApprovalStatus.PENDING));
+<<<<<<< HEAD
+    public Map<String, Object> getUserStatistics() {
+        Map<String, Object> stats = new java.util.HashMap<>();
+        stats.put("totalUsers", userRepository.countAllUsers());
+
         counts.setRejected(userRepository.countByApprovalStatus(ApprovalStatus.REJECTED));
 
         YearMonth currentMonth = YearMonth.now();
@@ -74,3 +74,4 @@ public class UserServiceImpl implements IUserService {
 
     }
 }
+>>>>>>> dev

@@ -1,4 +1,3 @@
-
 package com.mit.rma_web_application.controllers;
 
 import com.mit.rma_web_application.config.JwtUtil;
@@ -6,12 +5,14 @@ import com.mit.rma_web_application.dtos.*;
 import com.mit.rma_web_application.models.*;
 import com.mit.rma_web_application.repositories.UserRepository;
 import com.mit.rma_web_application.services.CustomUserDetailsService;
+import com.mit.rma_web_application.services.EmailService;
 import com.mit.rma_web_application.services.interfaces.IUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -98,9 +99,10 @@ public class AuthController {
         }
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(authRequest.getUsername());
-        String token = jwtUtil.generateToken(userDetails.getUsername());
+        String token = jwtUtil.generateToken(userDetails.getUsername(), authRequest.getRole().name());
         return ResponseEntity.ok(new AuthResponse(token, authRequest.getRole()));
     }
+
     @GetMapping("/users")
     public ResponseEntity<List<User>> getAllUsers() {
         List<User> allUsers = userRepository.findAll();
@@ -109,9 +111,31 @@ public class AuthController {
 
     }
 
-    /**
-     * Endpoint to get all users with pending approval.
-     */
+    @PutMapping("/update-user")
+    public ResponseEntity<?> updateUser(@RequestBody UpdateUserDTO dto) {
+        Optional<User> userOptional = userRepository.findById(dto.getId());
+
+        if (userOptional.isEmpty()) {
+            return ResponseEntity.badRequest().body("User not found");
+        }
+
+        User user = userOptional.get();
+
+        try {
+            Set<Role> roleSet = dto.getRoles().stream()
+                    .map(roleStr -> Role.valueOf(roleStr.toUpperCase()))
+                    .collect(Collectors.toSet());
+
+            user.setRoles(roleSet);
+            user.setApprovalStatus(dto.getApprovalStatus());
+
+            userRepository.save(user);
+            return ResponseEntity.ok("User updated successfully");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body("Invalid role provided: " + e.getMessage());
+        }
+    }
+
     @GetMapping("/pending-users")
     public ResponseEntity<List<User>> getPendingUsers() {
         List<User> pendingUsers = userRepository.findByApprovalStatus(ApprovalStatus.PENDING);
@@ -119,10 +143,6 @@ public class AuthController {
         return ResponseEntity.ok(pendingUsers);
     }
 
-    /**
-     * Endpoint for approving a user.
-     * Only an admin should be allowed to approve a user.
-     */
     @PostMapping("/approve")
     public ResponseEntity<?> approveUser(@RequestBody ApprovelStatusDTO approvelStatusDTO) {
         Optional<User> userOptional = userRepository.findByUsername(approvelStatusDTO.getUsername());
@@ -136,19 +156,14 @@ public class AuthController {
         }
 
         user.setApprovalStatus(approvelStatusDTO.getApprovalStatus());
-
-        // Set the approvedAt field to the current time when approval status is updated to "APPROVED"
         if (ApprovalStatus.APPROVED.equals(approvelStatusDTO.getApprovalStatus())) {
-            user.setApprovedAt(LocalDateTime.now()); // Set the current time
+            user.setApprovedAt(LocalDateTime.now());
         }
 
         userRepository.save(user);
         return ResponseEntity.ok("User approval status updated successfully.");
     }
 
-    /**
-     * Endpoint to validate a JWT token.
-     */
     @GetMapping("/validate")
     public ResponseEntity<?> validateToken(@RequestParam String token, @RequestParam String username) {
         boolean isValid = jwtUtil.validateToken(token, username);
