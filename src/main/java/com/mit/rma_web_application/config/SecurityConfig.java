@@ -35,7 +35,7 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        //  Public Auth & User Approval Endpoints
+                        // Public Endpoints
                         .requestMatchers(
                                 "/api/auth/login",
                                 "/api/auth/register",
@@ -44,22 +44,22 @@ public class SecurityConfig {
                                 "/api/auth/approve",
                                 "/api/auth/forgot-password",
                                 "/api/auth/reset-password"
-                                // Allow approving without token
                         ).permitAll()
 
-                        //  Other Open Endpoints
+                        // Allow public access to certain resources
                         .requestMatchers("/api/vendors/**").permitAll()
                         .requestMatchers("/api/requests/**").permitAll()
                         .requestMatchers("/api/customers/**").permitAll()
                         .requestMatchers("/api/inventory/**").permitAll()
+                        .requestMatchers("/ws/**").permitAll()
 
-                        // 🔐 Role-Secured Routes
+                        // Role-secured Endpoints
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/engineer/**").hasRole("ENGINEER")
                         .requestMatchers("/api/supplychain/**").hasRole("SUPPLYCHAIN")
                         .requestMatchers("/api/rma/**").hasRole("RMA")
 
-                        // 🔐 All Other Requests
+                        // Catch-all: All others require authentication
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -82,6 +82,7 @@ public class SecurityConfig {
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
+
         return source;
     }
 
