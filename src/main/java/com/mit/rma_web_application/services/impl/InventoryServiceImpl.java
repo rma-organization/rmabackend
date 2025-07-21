@@ -35,9 +35,6 @@ public class InventoryServiceImpl implements InventoryService {
     @PersistenceContext
     private EntityManager entityManager;
 
-    @PersistenceContext
-    private EntityManager entityManager;
-
     @Override
     public InventoryDto createInventory(InventoryDto inventoryDto) {
         logger.info("Creating inventory with name: {}", inventoryDto.getName());
@@ -77,39 +74,6 @@ public class InventoryServiceImpl implements InventoryService {
                 .collect(Collectors.toList());
 
         return inventoryList.stream()
-                .map(InventoryMapper::mapToInventoryDto)
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public List<InventoryDto> searchInventoryByPartNumber(String query) {
-        if (query == null || query.trim().isEmpty()) {
-            return List.of();
-        }
-
-        List<Inventory> allInventory = inventoryRepository.findAll().stream()
-                .filter(inventory -> !inventory.isDeleted())
-                .collect(Collectors.toList());
-
-        String searchQuery = query.trim().toLowerCase();
-
-        List<Inventory> filteredInventory = allInventory.stream()
-                .filter(inventory -> {
-                    String partNumber = inventory.getInBoxPartNumber();
-                    if (partNumber != null) {
-                        String lowerCasePartNumber = partNumber.toLowerCase();
-                        // Manual character-by-character search
-                        for (int i = 0; i <= lowerCasePartNumber.length() - searchQuery.length(); i++) {
-                            if (lowerCasePartNumber.substring(i, i + searchQuery.length()).equals(searchQuery)) {
-                                return true;
-                            }
-                        }
-                    }
-                    return false;
-                })
-                .collect(Collectors.toList());
-
-        return filteredInventory.stream()
                 .map(InventoryMapper::mapToInventoryDto)
                 .collect(Collectors.toList());
     }
