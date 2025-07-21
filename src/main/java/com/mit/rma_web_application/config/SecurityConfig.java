@@ -1,8 +1,8 @@
-
 package com.mit.rma_web_application.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -15,7 +15,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.web.filter.CorsFilter;
 
 import java.util.List;
 
@@ -32,11 +31,11 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+                // Enable CORS with custom configuration
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .csrf(csrf -> csrf.disable())
+                .csrf(csrf -> csrf.disable()) // Disable CSRF for JWT APIs
                 .authorizeHttpRequests(auth -> auth
-
-                        // Public authentication endpoints
+                        // Public endpoints (no authentication required)
                         .requestMatchers(
                                 "/api/auth/login",
                                 "/api/auth/register",
@@ -47,29 +46,36 @@ public class SecurityConfig {
                                 "/api/auth/reset-password"
                         ).permitAll()
 
-                        // Public resource endpoints (with /** for sub-paths)
-                        .requestMatchers("/api/vendors/**").permitAll()
-                        .requestMatchers("/api/customers/**").permitAll()
-                        .requestMatchers("/api/inventory/**").permitAll()
+                        // Public GET requests to these resources
+                        .requestMatchers(HttpMethod.GET, "/api/vendors/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/customers/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/inventory/**").permitAll()
                         .requestMatchers("/ws/**").permitAll()
+
+                        // Protect Inventory POST, PUT, DELETE - only certain roles allowed
+                        .requestMatchers(HttpMethod.POST, "/api/inventory/**").hasAnyRole("ADMIN", "SUPPLYCHAIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/inventory/**").hasAnyRole("ADMIN", "SUPPLYCHAIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/inventory/**").hasAnyRole("ADMIN", "SUPPLYCHAIN")
 
                         // Admin-only endpoints
                         .requestMatchers("/api/auth/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
-                        // Role-based access
+                        // Role-based access control
                         .requestMatchers("/api/requests/**").hasAnyRole("ADMIN", "SUPPLYCHAIN", "ENGINEER", "RMA")
                         .requestMatchers("/api/engineer/**").hasRole("ENGINEER")
                         .requestMatchers("/api/supplychain/**").hasRole("SUPPLYCHAIN")
                         .requestMatchers("/api/rma/**").hasRole("RMA")
 
-                        // Authenticated-only
+                        // Authenticated users only
                         .requestMatchers("/api/notifications/**").authenticated()
 
-                        // All other requests require authentication
+                        // Any other request requires authentication
                         .anyRequest().authenticated()
                 )
+                // Stateless session management for JWT
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // Add JWT filter before UsernamePasswordAuthenticationFilter
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -78,6 +84,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
+        // Allowed frontend URLs
         config.setAllowedOrigins(List.of(
                 "http://localhost:5173",
                 "http://localhost:3000",
@@ -88,13 +95,8 @@ public class SecurityConfig {
         config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", config);  // <-- Corrected here
+        source.registerCorsConfiguration("/**", config);
         return source;
-    }
-
-    @Bean
-    public CorsFilter corsFilter() {
-        return new CorsFilter(corsConfigurationSource());
     }
 
     @Bean
