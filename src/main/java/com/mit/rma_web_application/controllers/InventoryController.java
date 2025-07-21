@@ -2,8 +2,10 @@ package com.mit.rma_web_application.controllers;
 
 import com.mit.rma_web_application.dtos.InventoryDto;
 import com.mit.rma_web_application.exceptions.ResourceNotFoundException;
+import com.mit.rma_web_application.mappers.InventoryMapper;
+import com.mit.rma_web_application.models.Inventory;
+import com.mit.rma_web_application.repositories.InventoryRepository;
 import com.mit.rma_web_application.services.InventoryService;
-
 import lombok.AllArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +18,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @CrossOrigin(origins = "http://localhost:5173")
 @AllArgsConstructor
@@ -26,6 +29,7 @@ public class InventoryController {
 
     private static final Logger logger = LoggerFactory.getLogger(InventoryController.class);
     private final InventoryService inventoryService;
+    private final InventoryRepository inventoryRepository;
 
     @PostMapping
     public ResponseEntity<?> createInventory(@Valid @RequestBody InventoryDto inventoryDto) {
@@ -108,5 +112,15 @@ public class InventoryController {
             logger.warn("Update vendor failed: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
         }
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<List<InventoryDto>> searchByInBoxPartNumber(
+            @RequestParam("query") String query) {
+        List<Inventory> results = inventoryRepository.searchByPartNumber(query);
+        List<InventoryDto> dtos = results.stream()
+                .map(InventoryMapper::mapToInventoryDto)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(dtos);
     }
 }

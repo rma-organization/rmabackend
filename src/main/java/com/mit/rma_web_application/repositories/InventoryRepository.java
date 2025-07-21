@@ -23,12 +23,12 @@ public interface InventoryRepository extends JpaRepository<Inventory, Long> {
     // Fetch a specific non-deleted inventory item by ID
     Optional<Inventory> findByIdAndDeletedAtIsNull(Long id);
 
-    // Fetch inventory items by name (non-deleted)
+    // Search by inventory name (non-deleted)
     @Query("SELECT i FROM Inventory i WHERE i.deletedAt IS NULL AND i.name LIKE CONCAT('%', :name, '%')")
     Optional<List<Inventory>> findByNameContainingAndDeletedAtIsNull(@Param("name") String name);
 
-    // Search by part number (non-deleted)
+    // ✅ Search by inBoxPartNumber (non-deleted)
     @Query("SELECT i FROM Inventory i WHERE i.deletedAt IS NULL AND " +
-            "(LOWER(i.inBoxPartNumber) LIKE LOWER(CONCAT('%', :query, '%')))")
+            "LOWER(i.inBoxPartNumber) LIKE LOWER(CONCAT('%', :query, '%'))")
     List<Inventory> searchByPartNumber(@Param("query") String query);
 }
