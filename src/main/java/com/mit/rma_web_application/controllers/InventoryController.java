@@ -114,10 +114,21 @@ public class InventoryController {
         }
     }
 
+    // Search by inBoxPartNumber
     @GetMapping("/search")
     public ResponseEntity<List<InventoryDto>> searchByInBoxPartNumber(
             @RequestParam("query") String query) {
         List<Inventory> results = inventoryRepository.searchByPartNumber(query);
+        List<InventoryDto> dtos = results.stream()
+                .map(InventoryMapper::mapToInventoryDto)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(dtos);
+    }
+
+    // Search by inBoxSerialNumber (NEW)
+    @GetMapping("/search-by-serial")
+    public ResponseEntity<List<InventoryDto>> searchBySerial(@RequestParam("serial") String serial) {
+        List<Inventory> results = inventoryRepository.searchBySerial(serial);
         List<InventoryDto> dtos = results.stream()
                 .map(InventoryMapper::mapToInventoryDto)
                 .collect(Collectors.toList());
