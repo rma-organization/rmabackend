@@ -36,9 +36,10 @@ public class NotificationController {
                                                          @RequestParam String message,
                                                          @RequestParam String type,
                                                          @RequestParam(required = false) String status,
+                                                         @RequestParam(required = false) Long requestsId,
                                                          Principal principal) {
         String senderUsername = principal.getName();
-        Notification notification = notificationService.sendNotification(receiverRole, message, type, senderUsername, status);
+        Notification notification = notificationService.sendNotification(receiverRole, message, type, senderUsername, status, requestsId);
         return ResponseEntity.ok(notification);
     }
 

@@ -12,4 +12,8 @@ import lombok.Setter;
 public class NotificationDTO {
     private String type;
     private String message;
+    private String receiverRole;
+    private String status;
+    private String senderUsername;
+    private Long requestsId;
 }

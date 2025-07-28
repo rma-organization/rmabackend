@@ -230,6 +230,7 @@
 //        return ResponseEntity.ok(userService.getUserStatistics());
 //    }
 //}
+
 package com.mit.rma_web_application.controllers;
 
 import com.mit.rma_web_application.config.JwtUtil;
@@ -290,6 +291,7 @@ public class AuthController {
                     "New user registered: " + newUser.getUsername() + ". Please review and approve.",
                     "INFO",
                     newUser.getUsername(),
+                    null,
                     null
             );
 

@@ -8,7 +8,8 @@ import java.util.List;
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
     List<Notification> findByReceiverRoleOrderByTimestampDesc(String receiverRole);
     List<Notification> findByReceiverRoleAndReadFalseOrderByTimestampDesc(String receiverRole);
-
     long countByReceiverRoleAndReadIsFalse(String receiverRole);
 
+    // ✅ New method to get notifications by role and specific username
+    List<Notification> findByReceiverRoleAndUserNameOrderByTimestampDesc(String receiverRole, String userName);
 }
