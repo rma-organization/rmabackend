@@ -30,7 +30,7 @@ public class InventoryServiceImpl implements InventoryService {
 
     private final InventoryRepository inventoryRepository;
     private final VendorRepository vendorRepository;
-    private final NotificationService notificationService; // ✅ Injected NotificationService
+    private final NotificationService notificationService; // Injected NotificationService
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -46,13 +46,14 @@ public class InventoryServiceImpl implements InventoryService {
         Inventory savedInventory = inventoryRepository.save(inventory);
         logger.info("Created inventory item with ID: {}", savedInventory.getId());
 
-        // ✅ Send notification to all engineers
+        // Send notification to all engineers with 6 arguments (including null requestId)
         notificationService.sendNotification(
                 "engineer",
                 "New inventory added: " + savedInventory.getName(),
                 "inventory",
                 "admin",
-                null
+                null,
+                null// requestId is null here, no associated request
         );
 
         return InventoryMapper.mapToInventoryDto(savedInventory);

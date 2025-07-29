@@ -34,6 +34,9 @@ public class Notification {
     @Column(name = "status")
     private String status;
 
+    @Column(name = "requests_id")
+    private Long requestsId;
+
     public Notification() {
         this.read = false;
         this.timestamp = LocalDateTime.now();

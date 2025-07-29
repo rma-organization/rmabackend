@@ -41,8 +41,19 @@ public class RequestService {
         Request entity = requestMapper.toEntity(dto);
         entity.setCreatedAt(LocalDateTime.now());
         entity.setUpdatedAt(LocalDateTime.now());
+
         Request saved = requestRepository.save(entity);
-        notificationService.sendNotification("supplychain", "New part request by " + userName, "REQUEST", userName, "Requested");
+
+        // Notify supplychain about the new request
+        notificationService.sendNotification(
+                "supplychain",
+                "New part request by " + userName,
+                "REQUEST",
+                userName,
+                "Requested",
+                saved.getId()
+        );
+
         return requestMapper.toDTO(saved);
     }
 
@@ -74,6 +85,25 @@ public class RequestService {
         requestRepository.save(req);
 
         String message = "Request ID " + id + " status updated to '" + newStatus + "' by " + updatedBy;
-        notificationService.sendNotification(role, message, "STATUS", updatedBy, newStatus);
+
+        // 1️⃣ Notify the role performing the update
+        notificationService.sendNotification(
+                role,
+                message,
+                "STATUS",
+                updatedBy,
+                newStatus,
+                id
+        );
+
+        // 2️⃣ Always notify the engineer who created the request
+        notificationService.sendNotification(
+                "engineer",
+                message,
+                "STATUS",
+                updatedBy,
+                newStatus,
+                id
+        );
     }
 }
