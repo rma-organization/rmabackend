@@ -1,5 +1,3 @@
-
-
 package com.mit.rma_web_application.controllers;
 
 import com.mit.rma_web_application.models.Notification;
@@ -18,9 +16,12 @@ public class NotificationController {
     @Autowired
     private NotificationService notificationService;
 
-    // Get notifications by role
+    // Get notifications by role (custom logic for engineer handled in service)
     @GetMapping("/role")
     public ResponseEntity<List<Notification>> getRoleNotifications(@RequestHeader("Role") String role) {
+        if ("engineer".equalsIgnoreCase(role)) {
+            return ResponseEntity.ok(notificationService.getEngineerNotifications(role));
+        }
         return ResponseEntity.ok(notificationService.getRoleNotifications(role));
     }
 
@@ -43,7 +44,7 @@ public class NotificationController {
         return ResponseEntity.ok(notification);
     }
 
-    // Send notification to multiple roles at once
+    // Send notification to multiple roles
     @PostMapping("/send-multiple")
     public ResponseEntity<List<Notification>> sendNotificationToMultipleRoles(@RequestParam List<String> receiverRoles,
                                                                               @RequestParam String message,
@@ -63,14 +64,14 @@ public class NotificationController {
         return ResponseEntity.ok(updated);
     }
 
-    // NotificationController.java
-
+    // Delete a notification
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteNotification(@PathVariable Long id) {
         notificationService.deleteNotification(id);
         return ResponseEntity.noContent().build();
     }
 
+    // Get unread notification count by role
     @GetMapping("/unread-count")
     public ResponseEntity<Long> getUnreadCount(@RequestHeader("Role") String role) {
         return ResponseEntity.ok(notificationService.countUnreadNotifications(role));
@@ -82,15 +83,10 @@ public class NotificationController {
         return ResponseEntity.ok(notificationService.getUnreadRoleNotifications(role));
     }
 
-
+    // Mark notification as read
     @PutMapping("/{id}/mark-read")
     public ResponseEntity<Notification> markNotificationAsRead(@PathVariable Long id) {
         Notification updated = notificationService.markAsRead(id);
         return ResponseEntity.ok(updated);
     }
-
-
-
-
 }
-

@@ -53,7 +53,7 @@ public class InventoryServiceImpl implements InventoryService {
                 "inventory",
                 "admin",
                 null,
-                null // requestId is null here, no associated request
+                null// requestId is null here, no associated request
         );
 
         return InventoryMapper.mapToInventoryDto(savedInventory);
