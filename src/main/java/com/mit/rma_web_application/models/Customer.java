@@ -5,6 +5,9 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
+
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -20,6 +23,10 @@ public class Customer {
 
     @Column(nullable = false)
     private String name;
+    @CreationTimestamp
+    private LocalDateTime createdAt;
+
+    private LocalDateTime deletedAt;
 
     // Custom constructor
     public Customer(String name) {

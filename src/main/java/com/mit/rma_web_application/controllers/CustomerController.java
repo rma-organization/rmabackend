@@ -1,7 +1,8 @@
 package com.mit.rma_web_application.controllers;
 
-import com.mit.rma_web_application.models.Customer;
+import com.mit.rma_web_application.dtos.CustomerDTO;
 import com.mit.rma_web_application.services.CustomerService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,40 +14,62 @@ public class CustomerController {
 
     private final CustomerService customerService;
 
+    // Constructor Injection
     public CustomerController(CustomerService customerService) {
         this.customerService = customerService;
     }
 
     // Get all customers
     @GetMapping
-    public ResponseEntity<List<Customer>> getAllCustomers() {
-        return ResponseEntity.ok(customerService.getAllCustomers());
+    public ResponseEntity<List<CustomerDTO>> getAllCustomers() {
+        List<CustomerDTO> customers = customerService.getAllCustomers();
+        return ResponseEntity.ok(customers);
     }
 
     // Get a customer by ID
-    @GetMapping("/{id}")
-    public ResponseEntity<Customer> getCustomerById(@PathVariable Long id) {
-        return customerService.getCustomerById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    @GetMapping("/{customerId}")
+    public ResponseEntity<CustomerDTO> getCustomerById(@PathVariable Long customerId) {
+        CustomerDTO customer = customerService.getCustomerById(customerId);
+        return ResponseEntity.ok(customer);
     }
 
     // Create a new customer
     @PostMapping
-    public ResponseEntity<Customer> createCustomer(@RequestBody Customer customer) {
-        return ResponseEntity.ok(customerService.createCustomer(customer));
+    public ResponseEntity<CustomerDTO> createCustomer(@RequestBody CustomerDTO customerDTO) {
+        CustomerDTO createdCustomer = customerService.addCustomer(customerDTO);
+        return ResponseEntity.status(HttpStatus.CREATED).body(createdCustomer);
     }
 
-    // Update customer by ID
-    @PutMapping("/{id}")
-    public ResponseEntity<Customer> updateCustomer(@PathVariable Long id, @RequestBody Customer customer) {
-        return ResponseEntity.ok(customerService.updateCustomer(id, customer.getName()));
+    // Update a customer
+    @PutMapping("/{customerId}")
+    public ResponseEntity<CustomerDTO> updateCustomer(@PathVariable Long customerId, @RequestBody CustomerDTO customerDTO) {
+        try {
+            CustomerDTO updatedCustomer = customerService.updateCustomer(customerId, customerDTO);
+            return ResponseEntity.ok(updatedCustomer);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        }
     }
 
-    // Delete customer by ID
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteCustomer(@PathVariable Long id) {
-        customerService.deleteCustomer(id);
-        return ResponseEntity.noContent().build();
+    // Delete a customer
+    @DeleteMapping("/{customerId}")
+    public ResponseEntity<String> deleteCustomer(@PathVariable Long customerId) {
+        try {
+            customerService.deleteCustomer(customerId);
+            return ResponseEntity.ok("Customer deleted successfully!");
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+    }
+
+    // Restore a deleted customer
+    @PatchMapping("/{customerId}/restore")
+    public ResponseEntity<String> restoreCustomer(@PathVariable Long customerId) {
+        try {
+            customerService.restoreCustomer(customerId);
+            return ResponseEntity.ok("Customer restored successfully!");
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
     }
 }
